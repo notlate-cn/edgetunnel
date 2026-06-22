@@ -1,0 +1,102 @@
+{
+  "enabled": true,
+  "appendServerToName": true,
+  "dnsPreset": "default",
+  "addProxiesToGroups": true,
+  "nodes": {
+    "tt": {
+      "type": "vless-reality",
+      "flag": "🇸🇬",
+      "name": "SP-TT",
+      "server": "203.0.113.10",
+      "port": 443,
+      "uuid": "YOUR-TT-UUID",
+      "servername": "www.microsoft.com",
+      "publicKey": "YOUR-TT-REALITY-PUBLIC-KEY",
+      "shortId": "abcd"
+    },
+    "hd": {
+      "type": "vless-reality",
+      "flag": "🇺🇸",
+      "name": "US-HD",
+      "server": "198.51.100.20",
+      "port": 443,
+      "uuid": "YOUR-HD-UUID",
+      "servername": "addons.mozilla.org",
+      "clientFingerprint": "firefox",
+      "publicKey": "YOUR-HD-REALITY-PUBLIC-KEY",
+      "shortId": "",
+      "smux": {
+        "enabled": false,
+        "protocol": "h2mux",
+        "padding": false,
+        "maxConnections": "8",
+        "minStreams": "16",
+        "statistic": true,
+        "onlyTcp": false
+      },
+      "brutal": {
+        "enabled": false,
+        "up": "1000 Mbps",
+        "down": "1000 Mbps"
+      }
+    },
+    "static_hd": {
+      "type": "socks5-chain",
+      "flag": "🇺🇸",
+      "name": "US-StaticIP-via-HD",
+      "server": "192.0.2.30",
+      "port": 22324,
+      "username": "YOUR-SOCKS-USERNAME",
+      "password": "YOUR-SOCKS-PASSWORD",
+      "dialer": "hd"
+    },
+    "static_tt": {
+      "type": "socks5-chain",
+      "flag": "🇺🇸",
+      "name": "US-StaticIP-via-TT",
+      "server": "192.0.2.30",
+      "port": 22324,
+      "username": "YOUR-SOCKS-USERNAME",
+      "password": "YOUR-SOCKS-PASSWORD",
+      "dialer": "tt"
+    }
+  },
+  "rules": {
+    "target": "static_hd",
+    "domainSuffix": [
+      "x.com",
+      "t.co",
+      "gemini.gstatic.com",
+      "argotunnel.com",
+      "cloudflare.com",
+      "cloudflarebridge.com"
+    ],
+    "domainKeyword": [
+      "twitter",
+      "twimg",
+      "anthropic",
+      "claude",
+      "claudemcpcontent",
+      "openai",
+      "chatgpt",
+      "datadoghq",
+      "adspower",
+      "browserleaks",
+      "apple",
+      "icloud",
+      "auth0"
+    ]
+  },
+  "groupDefaults": {
+    "电报信息": ["static_hd"],
+    "OpenAi": ["static_hd"],
+    "OpenAI": ["static_hd"],
+    "微软服务": ["static_hd"],
+    "香港节点": ["hd"],
+    "美国节点": ["hd"]
+  },
+  "emoji": {
+    "patterns": []
+  }
+}

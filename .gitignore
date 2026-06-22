@@ -30,6 +30,12 @@ wrangler-install.log
 .env
 .env.local
 .env.*.local
+custom-subscription.json
+custom-subscription.private.json
+custom-subscription.generated.json
+
+# 本地打包产物
+worker-*.zip
 
 # 日志文件
 *.log

@@ -1,0 +1,70 @@
+{
+  "enabled": true,
+  "appendServerToName": true,
+  "clash": {
+    "dns": "dns:\n  enable: true\n  ipv6: false\n  enhanced-mode: fake-ip\n  fake-ip-range: 198.18.0.1/16\n  use-hosts: true\n  nameserver:\n    - https://sm2.doh.pub/dns-query\n    - https://dns.alidns.com/dns-query\n  fake-ip-filter:\n    - '*.argotunnel.com'\n    - 'argotunnel.com'\n    - '*.cloudflare.com'\n    - 'browser.argotunnel.com'\n    - '*.cloudflarebridge.com'\n    - 'localhost'\n    - '+.lan'\n    - '+.local'\n  fallback:\n    - https://dns.google/dns-query\n    - https://cloudflare-dns.com/dns-query\n  fallback-filter:\n    geoip: true\n    geoip-code: CN\n    geosite:\n      - gfw\n    ipcidr:\n      - 240.0.0.0/4\n      - 127.0.0.1/32\n      - 0.0.0.0/32\n    domain:\n      - '+.google.com'\n      - '+.facebook.com'\n      - '+.youtube.com'\n",
+    "proxies": [
+      {
+        "name": "🇸🇬 SP-TT-203.0.113.10",
+        "yaml": "  - {name: \"🇸🇬 SP-TT-203.0.113.10\", type: vless, server: 203.0.113.10, port: 443, uuid: \"YOUR-VLESS-UUID\", network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.microsoft.com, reality-opts: {public-key: \"YOUR-REALITY-PUBLIC-KEY\", short-id: \"YOUR-SHORT-ID\"}}"
+      },
+      {
+        "name": "🇺🇸 US-HD-198.51.100.20",
+        "yaml": "  - {name: \"🇺🇸 US-HD-198.51.100.20\", type: vless, server: 198.51.100.20, port: 443, uuid: \"YOUR-VLESS-UUID\", network: tcp, udp: true, tls: true, flow: xtls-rprx-vision, servername: addons.mozilla.org, client-fingerprint: firefox, reality-opts: {public-key: \"YOUR-REALITY-PUBLIC-KEY\", short-id: \"\"}, smux: {enabled: false, protocol: \"h2mux\", padding: false, max-connections: \"8\", min-streams: \"16\", statistic: true, only-tcp: false}, brutal-opts: {enabled: false, up: \"1000 Mbps\", down: \"1000 Mbps\"}}"
+      },
+      {
+        "name": "🇺🇸 US-StaticIP-via-HD",
+        "yaml": "  - {name: \"🇺🇸 US-StaticIP-via-HD\", type: socks5, server: 192.0.2.30, port: 22324, username: \"YOUR-SOCKS-USERNAME\", password: \"YOUR-SOCKS-PASSWORD\", dialer-proxy: \"🇺🇸 US-HD-198.51.100.20\"}"
+      },
+      {
+        "name": "🇺🇸 US-StaticIP-via-TT",
+        "yaml": "  - {name: \"🇺🇸 US-StaticIP-via-TT\", type: socks5, server: 192.0.2.30, port: 22324, username: \"YOUR-SOCKS-USERNAME\", password: \"YOUR-SOCKS-PASSWORD\", dialer-proxy: \"🇸🇬 SP-TT-203.0.113.10\"}"
+      }
+    ],
+    "rules": [
+      "DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,twitter,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,twimg,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-SUFFIX,t.co,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,anthropic,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,claude,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,claudemcpcontent,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,chatgpt,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,datadoghq,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,adspower,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,browserleaks,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,apple,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,icloud,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,auth0,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-SUFFIX,gemini.gstatic.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-SUFFIX,argotunnel.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-SUFFIX,cloudflare.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-SUFFIX,cloudflarebridge.com,🇺🇸 US-StaticIP-via-HD,no-resolve"
+    ],
+    "addProxiesToGroups": true,
+    "groupDefaults": {
+      "电报信息": ["🇺🇸 US-StaticIP-via-HD"],
+      "OpenAi": ["🇺🇸 US-StaticIP-via-HD"],
+      "OpenAI": ["🇺🇸 US-StaticIP-via-HD"],
+      "微软服务": ["🇺🇸 US-StaticIP-via-HD"],
+      "香港节点": ["🇺🇸 US-HD-198.51.100.20"],
+      "美国节点": ["🇺🇸 US-HD-198.51.100.20"]
+    },
+    "emoji": {
+      "servers": {
+        "203.0.113.10": "🇸🇬",
+        "198.51.100.20": "🇺🇸",
+        "192.0.2.30": "🇺🇸"
+      },
+      "patterns": [
+        { "match": "新加坡|singapore|(?:^|[\\s_-])sg(?:[\\s_-]|$)|(?:^|[\\s_-])sp(?:[\\s_-]|$)", "flag": "🇸🇬" },
+        { "match": "美国|美國|united\\s*states|america|(?:^|[\\s_-])us(?:[\\s_-]|$)|cloudflare|cf官方", "flag": "🇺🇸" },
+        { "match": "香港|hong\\s*kong|(?:^|[\\s_-])hk(?:[\\s_-]|$)", "flag": "🇭🇰" },
+        { "match": "台湾|台灣|taiwan|(?:^|[\\s_-])tw(?:[\\s_-]|$)", "flag": "🇹🇼" },
+        { "match": "日本|japan|tokyo|(?:^|[\\s_-])jp(?:[\\s_-]|$)", "flag": "🇯🇵" },
+        { "match": "韩国|韓國|korea|seoul|(?:^|[\\s_-])kr(?:[\\s_-]|$)", "flag": "🇰🇷" }
+      ]
+    }
+  }
+}

@@ -311,6 +311,7 @@ export default {
 					const 订阅转换后端请求订阅 = 请求TOKEN === 今日订阅转换后端专属TOKEN || 请求TOKEN === 昨日订阅转换后端专属TOKEN;
 					if (用户客户端请求订阅 || 订阅转换后端请求订阅 || 作为优选订阅生成器) {
 						config_JSON = await 读取config_JSON(env, host, userID, UA);
+						const 个人订阅配置 = await 读取个人订阅配置(env);
 						if (作为优选订阅生成器) ctx.waitUntil(请求日志记录(env, request, 访问IP, 'Get_Best_SUB', config_JSON, false));
 						else ctx.waitUntil(请求日志记录(env, request, 访问IP, 'Get_SUB', config_JSON));
 						const ua = UA.toLowerCase();
@@ -335,13 +336,15 @@ export default {
 									? 'clash'
 									: url.searchParams.has('sb') || url.searchParams.has('singbox') || ua.includes('singbox') || ua.includes('sing-box')
 										? 'singbox'
-										: url.searchParams.has('surge') || ua.includes('surge')
-											? 'surge&ver=4'
-											: url.searchParams.has('quanx') || ua.includes('quantumult')
-												? 'quanx'
-												: url.searchParams.has('loon') || ua.includes('loon')
-													? 'loon'
-													: 'mixed';
+										: url.searchParams.has('shadowrocket') || ua.includes('shadowrocket')
+											? 'shadowrocket'
+											: url.searchParams.has('surge') || ua.includes('surge')
+												? 'surge&ver=4'
+												: url.searchParams.has('quanx') || ua.includes('quantumult')
+													? 'quanx'
+													: url.searchParams.has('loon') || ua.includes('loon')
+														? 'loon'
+														: 'mixed';
 
 						if (!ua.includes('mozilla')) responseHeaders["Content-Disposition"] = `attachment; filename*=utf-8''${encodeURIComponent(config_JSON.优选订阅生成.SUBNAME)}`;
 						const 协议类型 = ((url.searchParams.has('surge') || ua.includes('surge')) && config_JSON.协议类型 !== 'ss') ? 'tro' + 'jan' : config_JSON.协议类型;
@@ -436,6 +439,7 @@ export default {
 									if (匹配到的反代IP) 完整节点路径 = (`${config_JSON.PATH}/proxyip=${匹配到的反代IP}`).replace(/\/\//g, '/') + (config_JSON.启用0RTT ? '?ed=2560' : '');
 								}
 								if (isLoonOrSurge) 完整节点路径 = 完整节点路径.replace(/,/g, '%2C');
+								节点备注 = 添加个人节点地址到备注(节点备注, 节点地址, 个人订阅配置);
 
 								if (协议类型 === 'ss' && !作为优选订阅生成器) {
 									if (!config_JSON.SS.TLS) {
@@ -452,9 +456,10 @@ export default {
 								}
 							}).filter(item => item !== null).join('\n');
 						} else { // 订阅转换
-							const 订阅转换URL = `${config_JSON.订阅转换配置.SUBAPI}/sub?target=${订阅类型}&url=${encodeURIComponent(url.protocol + '//' + url.host + '/sub?target=mixed&token=' + 今日订阅转换后端专属TOKEN + '&cnIspCode=' + 识别运营商(request) + (url.searchParams.has('sub') && url.searchParams.get('sub') != '' ? `&sub=${url.searchParams.get('sub')}` : ''))}&config=${encodeURIComponent(config_JSON.订阅转换配置.SUBCONFIG)}&emoji=${config_JSON.订阅转换配置.SUBEMOJI}&list=${config_JSON.订阅转换配置.SUBLIST}&scv=${config_JSON.跳过证书验证}`;
+							const 订阅转换目标 = 获取订阅转换目标(订阅类型);
+							const 订阅转换URL = `${config_JSON.订阅转换配置.SUBAPI}/sub?target=${订阅转换目标}&url=${encodeURIComponent(url.protocol + '//' + url.host + '/sub?target=mixed&token=' + 今日订阅转换后端专属TOKEN + '&cnIspCode=' + 识别运营商(request) + (url.searchParams.has('sub') && url.searchParams.get('sub') != '' ? `&sub=${url.searchParams.get('sub')}` : ''))}&config=${encodeURIComponent(config_JSON.订阅转换配置.SUBCONFIG)}&emoji=${config_JSON.订阅转换配置.SUBEMOJI}&list=${config_JSON.订阅转换配置.SUBLIST}&scv=${config_JSON.跳过证书验证}`;
 							try {
-								const response = await fetch(订阅转换URL, { headers: { 'User-Agent': 'Subconverter for ' + 订阅类型 + ' edge' + 'tunnel (https://github.com/' + 特征码字典[1] + '/edge' + 'tunnel)' } });
+								const response = await fetch(订阅转换URL, { headers: { 'User-Agent': 'Subconverter for ' + 订阅转换目标 + ' edge' + 'tunnel (https://github.com/' + 特征码字典[1] + '/edge' + 'tunnel)' } });
 								if (response.ok) {
 									订阅内容 = await response.text();
 									if (url.searchParams.has('surge') || ua.includes('surge')) 订阅内容 = Surge订阅配置文件热补丁(订阅内容, url.protocol + '//' + url.host + '/sub?token=' + 订阅TOKEN + '&surge', config_JSON);
@@ -485,7 +490,8 @@ export default {
 						if (订阅类型 === 'singbox') {
 							订阅内容 = await Singbox订阅配置文件热补丁(订阅内容, config_JSON);
 							responseHeaders["content-type"] = 'application/json; charset=utf-8';
-						} else if (订阅类型 === 'clash') {
+						} else if (订阅类型需要Clash热补丁(订阅类型)) {
+							订阅内容 = 应用个人Clash配置(订阅内容, 个人订阅配置);
 							订阅内容 = Clash订阅配置文件热补丁(订阅内容, config_JSON);
 							responseHeaders["content-type"] = 'application/x-yaml; charset=utf-8';
 						}
@@ -4166,6 +4172,417 @@ function 获取传输路径参数值(配置 = {}, 节点路径 = '/', 作为优�
 
 function log(...args) {
 	if (调试日志打印) console.log(...args);
+}
+
+const 个人订阅默认配置 = {
+	enabled: false,
+	appendServerToName: false,
+	clash: {
+		dns: '',
+		proxies: [],
+		rules: [],
+		addProxiesToGroups: true,
+		groupDefaults: {},
+		emoji: {
+			servers: {},
+			patterns: [],
+		},
+	},
+};
+
+function 订阅类型需要Clash热补丁(订阅类型) {
+	return 订阅类型 === 'clash' || 订阅类型 === 'shadowrocket';
+}
+
+function 获取订阅转换目标(订阅类型) {
+	return 订阅类型 === 'shadowrocket' ? 'clash' : 订阅类型;
+}
+
+function 深克隆配置(value) {
+	if (Array.isArray(value)) return value.map(深克隆配置);
+	if (value && typeof value === 'object') {
+		const copy = {};
+		for (const [key, child] of Object.entries(value)) copy[key] = 深克隆配置(child);
+		return copy;
+	}
+	return value;
+}
+
+function 深合并配置(base, override) {
+	if (override === undefined) return 深克隆配置(base);
+	if (Array.isArray(override)) return override.map(深克隆配置);
+	if (!override || typeof override !== 'object') return override;
+	const result = base && typeof base === 'object' && !Array.isArray(base) ? 深克隆配置(base) : {};
+	for (const [key, value] of Object.entries(override)) result[key] = 深合并配置(result[key], value);
+	return result;
+}
+
+function 解析个人订阅配置文本(文本) {
+	const raw = String(文本 || '').trim();
+	if (!raw) return {};
+	if (/^(0|false|off|disabled)$/i.test(raw)) return { enabled: false };
+	return JSON.parse(raw);
+}
+
+function 规范化个人订阅配置(配置 = {}) {
+	return 深合并配置(个人订阅默认配置, 配置);
+}
+
+async function 读取个人订阅配置(env = {}) {
+	let 配置 = {};
+	for (const key of ['CUSTOM_SUBSCRIPTION', 'CUSTOM_SUB', 'PERSONAL_SUBSCRIPTION']) {
+		if (!env[key]) continue;
+		try {
+			配置 = 深合并配置(配置, 解析个人订阅配置文本(env[key]));
+		} catch (error) {
+			console.warn(`[个人订阅配置] 环境变量 ${key} 解析失败: ${error.message}`);
+		}
+	}
+	if (env.KV && typeof env.KV.get === 'function') {
+		for (const key of ['custom-subscription.json', 'CUSTOM_SUBSCRIPTION', 'personal-subscription.json']) {
+			try {
+				const value = await env.KV.get(key);
+				if (value) 配置 = 深合并配置(配置, 解析个人订阅配置文本(value));
+			} catch (error) {
+				console.warn(`[个人订阅配置] KV ${key} 读取或解析失败: ${error.message}`);
+			}
+		}
+	}
+	return 规范化个人订阅配置(配置);
+}
+
+function 添加个人节点地址到备注(节点备注, 节点地址, 配置 = {}) {
+	const 个人配置 = 规范化个人订阅配置(配置);
+	if (!个人配置.enabled || !个人配置.appendServerToName) return 节点备注;
+	const 节点地址备注后缀 = String(节点地址 || '').replace(/^\[|\]$/g, '');
+	if (!节点地址备注后缀 || String(节点备注 || '').endsWith(`-${节点地址备注后缀}`)) return 节点备注;
+	return `${节点备注}-${节点地址备注后缀}`;
+}
+
+function YAML字段正则转义(字段) {
+	return 字段.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function YAML标量去引号(值 = '') {
+	const 文本 = String(值).trim();
+	if ((文本.startsWith('"') && 文本.endsWith('"')) || (文本.startsWith("'") && 文本.endsWith("'"))) return 文本.slice(1, -1);
+	return 文本;
+}
+
+function YAML引用字符串(值) {
+	return JSON.stringify(String(值));
+}
+
+function 提取YAML字段值(文本, 字段) {
+	const 字段名 = YAML字段正则转义(字段);
+	const 匹配 = String(文本).match(new RegExp(`${字段名}\\s*:\\s*("[^"]*"|'[^']*'|[^,}\\]\\n#]+)`));
+	return 匹配 ? YAML标量去引号(匹配[1]) : null;
+}
+
+function 替换YAML字段值(文本, 字段, 新值) {
+	const 字段名 = YAML字段正则转义(字段);
+	return String(文本).replace(new RegExp(`(${字段名}\\s*:\\s*)("[^"]*"|'[^']*'|[^,}\\]\\n#]+)`), `$1${YAML引用字符串(新值)}`);
+}
+
+function 查找YAML顶级段落(行列表, 段落名列表) {
+	const 段落名集合 = new Set(段落名列表);
+	let 开始 = -1;
+	for (let i = 0; i < 行列表.length; i++) {
+		const 匹配 = 行列表[i].match(/^([A-Za-z0-9_-]+):\s*(?:#.*)?$/);
+		if (匹配 && 段落名集合.has(匹配[1])) {
+			开始 = i;
+			break;
+		}
+	}
+	if (开始 === -1) return null;
+	let 结束 = 行列表.length;
+	for (let i = 开始 + 1; i < 行列表.length; i++) {
+		if (/^[A-Za-z0-9_-]+:\s*(?:#.*)?$/.test(行列表[i])) {
+			结束 = i;
+			break;
+		}
+	}
+	return { 开始, 结束 };
+}
+
+function 替换或插入ClashDNS段落(clash_yaml, dnsBlock) {
+	const 行列表 = clash_yaml.split('\n');
+	const DNS段落 = 查找YAML顶级段落(行列表, ['dns']);
+	const DNS行列表 = String(dnsBlock || '').trimEnd().split('\n');
+	if (!dnsBlock) return clash_yaml;
+	if (!DNS段落) return DNS行列表.join('\n') + '\n' + clash_yaml.replace(/^\n+/, '');
+	行列表.splice(DNS段落.开始, DNS段落.结束 - DNS段落.开始, ...DNS行列表);
+	return 行列表.join('\n');
+}
+
+function 收集Clash代理名称(行列表, 开始, 结束) {
+	const 名称集合 = new Set();
+	for (let i = 开始; i < 结束; i++) {
+		const 名称 = 提取YAML字段值(行列表[i], 'name');
+		if (名称) 名称集合.add(名称);
+	}
+	return 名称集合;
+}
+
+function 个人Clash代理条目列表(clashConfig = {}) {
+	return (Array.isArray(clashConfig.proxies) ? clashConfig.proxies : []).map(item => {
+		if (typeof item === 'string') {
+			const yaml = item.trimStart().startsWith('-') ? `  ${item.trimStart()}` : `  - ${item}`;
+			return { name: 提取YAML字段值(yaml, 'name'), yaml };
+		}
+		const yaml = String(item?.yaml || '').trimStart().startsWith('-') ? `  ${String(item.yaml).trimStart()}` : String(item?.yaml || '');
+		return { name: item?.name || 提取YAML字段值(yaml, 'name'), yaml };
+	}).filter(item => item.name && item.yaml);
+}
+
+function 个人Clash代理名称列表(clashConfig = {}) {
+	return 个人Clash代理条目列表(clashConfig).map(item => item.name);
+}
+
+function 添加个人Clash代理(clash_yaml, clashConfig = {}) {
+	const 条目列表 = 个人Clash代理条目列表(clashConfig);
+	if (条目列表.length === 0) return clash_yaml;
+	const 行列表 = clash_yaml.split('\n');
+	const 代理段落 = 查找YAML顶级段落(行列表, ['proxies']);
+	if (!代理段落) return `proxies:\n${条目列表.map(item => item.yaml).join('\n')}\n` + clash_yaml.replace(/^\n+/, '');
+	const 已有名称 = 收集Clash代理名称(行列表, 代理段落.开始 + 1, 代理段落.结束);
+	const 待添加条目 = 条目列表.filter(item => !已有名称.has(item.name)).map(item => item.yaml);
+	if (待添加条目.length === 0) return clash_yaml;
+	let 插入位置 = 代理段落.结束;
+	while (插入位置 > 代理段落.开始 + 1 && 行列表[插入位置 - 1].trim() === '') 插入位置--;
+	行列表.splice(插入位置, 0, ...待添加条目);
+	return 行列表.join('\n');
+}
+
+function 渲染Clash代理引用列表(代理名称列表) {
+	return 代理名称列表.map(名称 => ['DIRECT', 'REJECT', 'REJECT-DROP', 'GLOBAL'].includes(名称) ? 名称 : YAML引用字符串(名称)).join(', ');
+}
+
+function 合并Clash分组代理(已有名称列表, 待添加名称列表 = [], 优先名称列表 = []) {
+	const result = 已有名称列表.filter(Boolean);
+	for (const 名称 of 待添加名称列表) if (名称 && !result.includes(名称)) result.push(名称);
+	for (let i = 优先名称列表.length - 1; i >= 0; i--) {
+		const 名称 = 优先名称列表[i];
+		if (!名称) continue;
+		const index = result.indexOf(名称);
+		if (index >= 0) result.splice(index, 1);
+		result.unshift(名称);
+	}
+	return result;
+}
+
+function 获取Clash分组优先代理列表(分组名, clashConfig = {}) {
+	const groupDefaults = clashConfig.groupDefaults || {};
+	if (!分组名 || !groupDefaults || typeof groupDefaults !== 'object') return [];
+	if (Array.isArray(groupDefaults[分组名])) return groupDefaults[分组名];
+	const 匹配键 = Object.keys(groupDefaults).find(key => key.toLowerCase() === String(分组名).toLowerCase());
+	return 匹配键 && Array.isArray(groupDefaults[匹配键]) ? groupDefaults[匹配键] : [];
+}
+
+function 更新FlowClash代理列表(行文本, 分组名, clashConfig = {}) {
+	const 待添加代理名称列表 = clashConfig.addProxiesToGroups === false ? [] : 个人Clash代理名称列表(clashConfig);
+	const 优先代理名称列表 = 获取Clash分组优先代理列表(分组名, clashConfig);
+	if (待添加代理名称列表.length === 0 && 优先代理名称列表.length === 0) return 行文本;
+	return 行文本.replace(/(proxies\s*:\s*\[)([^\]]*)(\])/, (_, 前缀, 内容, 后缀) => {
+		const 代理名称列表 = 内容.split(',').map(item => YAML标量去引号(item)).filter(Boolean);
+		return 前缀 + 渲染Clash代理引用列表(合并Clash分组代理(代理名称列表, 待添加代理名称列表, 优先代理名称列表)) + 后缀;
+	});
+}
+
+function 处理BlockClash分组(分组行列表, clashConfig = {}) {
+	if (分组行列表.length === 0) return 分组行列表;
+	const 分组名 = 提取YAML字段值(分组行列表[0], 'name');
+	for (let i = 0; i < 分组行列表.length; i++) {
+		if (/\bproxies\s*:\s*\[/.test(分组行列表[i])) {
+			分组行列表[i] = 更新FlowClash代理列表(分组行列表[i], 分组名, clashConfig);
+			continue;
+		}
+		if (!/^\s*proxies\s*:\s*(?:#.*)?$/.test(分组行列表[i])) continue;
+		const 代理列表缩进 = 分组行列表[i].search(/\S/);
+		let 列表结束 = i + 1, 子项缩进 = 代理列表缩进 + 2;
+		const 已有名称 = [];
+		for (let j = i + 1; j < 分组行列表.length; j++) {
+			const 下一行 = 分组行列表[j];
+			const 去空白 = 下一行.trim();
+			if (!去空白) {
+				列表结束 = j + 1;
+				continue;
+			}
+			const 缩进 = 下一行.search(/\S/);
+			if (缩进 <= 代理列表缩进) break;
+			const 子项匹配 = 下一行.match(/^(\s*)-\s*(.+?)\s*(?:#.*)?$/);
+			if (子项匹配) {
+				子项缩进 = 子项匹配[1].length;
+				已有名称.push(YAML标量去引号(子项匹配[2]));
+			}
+			列表结束 = j + 1;
+		}
+		const 待添加代理名称列表 = clashConfig.addProxiesToGroups === false ? [] : 个人Clash代理名称列表(clashConfig);
+		const 优先代理名称列表 = 获取Clash分组优先代理列表(分组名, clashConfig);
+		const 代理名称列表 = 合并Clash分组代理(已有名称, 待添加代理名称列表, 优先代理名称列表);
+		分组行列表.splice(i + 1, 列表结束 - (i + 1), ...代理名称列表.map(名称 => `${' '.repeat(子项缩进)}- ${YAML引用字符串(名称)}`));
+		break;
+	}
+	return 分组行列表;
+}
+
+function 添加个人Clash代理到分组(clash_yaml, clashConfig = {}) {
+	const 行列表 = clash_yaml.split('\n');
+	const 分组段落 = 查找YAML顶级段落(行列表, ['proxy-groups', 'proxy_groups']);
+	if (!分组段落) return clash_yaml;
+	let 分组结束 = 分组段落.结束;
+	for (let i = 分组段落.开始 + 1; i < 分组结束;) {
+		if (/^\s*-\s*\{/.test(行列表[i])) {
+			const 分组名 = 提取YAML字段值(行列表[i], 'name');
+			行列表[i] = 更新FlowClash代理列表(行列表[i], 分组名, clashConfig);
+			i++;
+			continue;
+		}
+		if (!/^\s*-\s*name\s*:/.test(行列表[i])) {
+			i++;
+			continue;
+		}
+		const 分组开始 = i;
+		const 基础缩进 = 行列表[i].search(/\S/);
+		let 块结束 = i + 1;
+		for (let j = i + 1; j < 分组结束; j++) {
+			const 去空白 = 行列表[j].trim();
+			if (!去空白) {
+				块结束 = j + 1;
+				continue;
+			}
+			const 缩进 = 行列表[j].search(/\S/);
+			if (缩进 <= 基础缩进 && /^\s*-\s*/.test(行列表[j])) break;
+			块结束 = j + 1;
+		}
+		const 原块长度 = 块结束 - 分组开始;
+		const 新块 = 处理BlockClash分组(行列表.slice(分组开始, 块结束), clashConfig);
+		行列表.splice(分组开始, 原块长度, ...新块);
+		分组结束 += 新块.length - 原块长度;
+		i = 分组开始 + 新块.length;
+	}
+	return 行列表.join('\n');
+}
+
+function 添加个人Clash规则(clash_yaml, clashConfig = {}) {
+	const 规则列表 = Array.isArray(clashConfig.rules) ? clashConfig.rules : [];
+	if (规则列表.length === 0) return clash_yaml;
+	const 行列表 = clash_yaml.split('\n');
+	const 规则段落 = 查找YAML顶级段落(行列表, ['rules']);
+	const 已有规则 = new Set(行列表.map(line => line.trim().replace(/^-\s*/, '')));
+	const 待添加规则 = 规则列表.filter(rule => !已有规则.has(rule)).map(rule => `  - ${rule}`);
+	if (待添加规则.length === 0) return clash_yaml;
+	if (!规则段落) return clash_yaml.replace(/\s*$/, '\n') + `rules:\n${待添加规则.join('\n')}\n`;
+	行列表.splice(规则段落.开始 + 1, 0, ...待添加规则);
+	return 行列表.join('\n');
+}
+
+function 含国旗Emoji(文本 = '') {
+	return /[\u{1F1E6}-\u{1F1FF}]{2}/u.test(String(文本));
+}
+
+function 获取Clash代理国旗Emoji(名称 = '', 节点文本 = '', clashConfig = {}) {
+	const 文本 = `${名称} ${节点文本}`;
+	const server = 提取YAML字段值(节点文本, 'server') || '';
+	const servers = clashConfig?.emoji?.servers || {};
+	if (servers[server]) return servers[server];
+	for (const item of Array.isArray(clashConfig?.emoji?.patterns) ? clashConfig.emoji.patterns : []) {
+		try {
+			if (item?.flag && new RegExp(item.match, 'i').test(文本)) return item.flag;
+		} catch (_) { }
+	}
+	return '🇺🇸';
+}
+
+function 补齐Clash代理名称国旗(名称, 节点文本 = '', clashConfig = {}) {
+	if (!名称 || 含国旗Emoji(名称) || ['DIRECT', 'REJECT', 'REJECT-DROP', 'GLOBAL'].includes(名称)) return 名称;
+	return `${获取Clash代理国旗Emoji(名称, 节点文本, clashConfig)} ${名称}`;
+}
+
+function 使用映射替换Flow代理列表(行文本, 重命名映射) {
+	return 行文本.replace(/(proxies\s*:\s*\[)([^\]]*)(\])/, (_, 前缀, 内容, 后缀) => {
+		const 代理名称列表 = 内容.split(',').map(item => YAML标量去引号(item)).filter(Boolean).map(名称 => 重命名映射.get(名称) || 名称);
+		return 前缀 + 渲染Clash代理引用列表(代理名称列表) + 后缀;
+	});
+}
+
+function 替换Clash分组代理引用(行列表, 重命名映射) {
+	const 分组段落 = 查找YAML顶级段落(行列表, ['proxy-groups', 'proxy_groups']);
+	if (!分组段落) return;
+	for (let i = 分组段落.开始 + 1; i < 分组段落.结束; i++) {
+		if (/\bproxies\s*:\s*\[/.test(行列表[i])) {
+			行列表[i] = 使用映射替换Flow代理列表(行列表[i], 重命名映射);
+			continue;
+		}
+		if (!/^\s*proxies\s*:\s*(?:#.*)?$/.test(行列表[i])) continue;
+		const 代理列表缩进 = 行列表[i].search(/\S/);
+		for (let j = i + 1; j < 分组段落.结束; j++) {
+			const 下一行 = 行列表[j];
+			const 去空白 = 下一行.trim();
+			if (!去空白) continue;
+			const 缩进 = 下一行.search(/\S/);
+			if (缩进 <= 代理列表缩进) break;
+			const 子项匹配 = 下一行.match(/^(\s*)-\s*(.+?)\s*(?:#.*)?$/);
+			if (!子项匹配) continue;
+			const 原名称 = YAML标量去引号(子项匹配[2]);
+			const 新名称 = 重命名映射.get(原名称);
+			if (新名称) 行列表[j] = `${子项匹配[1]}- ${YAML引用字符串(新名称)}`;
+		}
+	}
+}
+
+function 补齐Clash代理国旗(clash_yaml, clashConfig = {}) {
+	const 行列表 = clash_yaml.split('\n');
+	const 代理段落 = 查找YAML顶级段落(行列表, ['proxies']);
+	if (!代理段落) return clash_yaml;
+	const 重命名映射 = new Map();
+	for (let i = 代理段落.开始 + 1; i < 代理段落.结束; i++) {
+		if (/^\s*-\s*\{/.test(行列表[i])) {
+			const 原名称 = 提取YAML字段值(行列表[i], 'name');
+			const 新名称 = 补齐Clash代理名称国旗(原名称, 行列表[i], clashConfig);
+			if (原名称 && 新名称 !== 原名称) {
+				行列表[i] = 替换YAML字段值(行列表[i], 'name', 新名称);
+				重命名映射.set(原名称, 新名称);
+			}
+			continue;
+		}
+		const 名称行匹配 = 行列表[i].match(/^(\s*-\s*name\s*:\s*)("[^"]*"|'[^']*'|.+?)\s*(?:#.*)?$/);
+		if (!名称行匹配) continue;
+		let 节点结束 = i + 1;
+		const 基础缩进 = 行列表[i].search(/\S/);
+		for (let j = i + 1; j < 代理段落.结束; j++) {
+			const 去空白 = 行列表[j].trim();
+			if (!去空白) {
+				节点结束 = j + 1;
+				continue;
+			}
+			const 缩进 = 行列表[j].search(/\S/);
+			if (缩进 <= 基础缩进 && /^\s*-\s*/.test(行列表[j])) break;
+			节点结束 = j + 1;
+		}
+		const 原名称 = YAML标量去引号(名称行匹配[2]);
+		const 节点文本 = 行列表.slice(i, 节点结束).join('\n');
+		const 新名称 = 补齐Clash代理名称国旗(原名称, 节点文本, clashConfig);
+		if (原名称 && 新名称 !== 原名称) {
+			行列表[i] = `${名称行匹配[1]}${YAML引用字符串(新名称)}`;
+			重命名映射.set(原名称, 新名称);
+		}
+	}
+	if (重命名映射.size > 0) 替换Clash分组代理引用(行列表, 重命名映射);
+	return 行列表.join('\n');
+}
+
+function 应用个人Clash配置(clash_yaml, 配置 = {}) {
+	const 个人配置 = 规范化个人订阅配置(配置);
+	if (!个人配置.enabled) return clash_yaml;
+	const clashConfig = 个人配置.clash || {};
+	let patched = clash_yaml;
+	if (clashConfig.dns) patched = 替换或插入ClashDNS段落(patched, clashConfig.dns);
+	patched = 添加个人Clash代理(patched, clashConfig);
+	patched = 添加个人Clash代理到分组(patched, clashConfig);
+	patched = 添加个人Clash规则(patched, clashConfig);
+	patched = 补齐Clash代理国旗(patched, clashConfig);
+	return patched;
 }
 
 function Clash订阅配置文件热补丁(Clash_原始订阅内容, config_JSON = {}) {

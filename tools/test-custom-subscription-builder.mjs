@@ -1,0 +1,176 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import test from 'node:test';
+
+import { buildCustomSubscription } from './custom-subscription-builder.mjs';
+
+function isDocumentationIPv4(ip) {
+	return /^192\.0\.2\.\d+$/.test(ip) || /^198\.51\.100\.\d+$/.test(ip) || /^203\.0\.113\.\d+$/.test(ip);
+}
+
+const SIMPLE_CONFIG = {
+	enabled: true,
+	appendServerToName: true,
+	nodes: {
+		tt: {
+			type: 'vless-reality',
+			flag: '🇸🇬',
+			name: 'SP-TT',
+			server: '203.0.113.10',
+			port: 443,
+			uuid: 'YOUR-TT-UUID',
+			servername: 'www.microsoft.com',
+			publicKey: 'YOUR-TT-PUBLIC-KEY',
+			shortId: 'abcd',
+		},
+		hd: {
+			type: 'vless-reality',
+			flag: '🇺🇸',
+			name: 'US-HD',
+			server: '198.51.100.20',
+			port: 443,
+			uuid: 'YOUR-HD-UUID',
+			servername: 'addons.mozilla.org',
+			publicKey: 'YOUR-HD-PUBLIC-KEY',
+			shortId: '',
+			clientFingerprint: 'firefox',
+			smux: {
+				enabled: false,
+				protocol: 'h2mux',
+				padding: false,
+				maxConnections: '8',
+				minStreams: '16',
+				statistic: true,
+				onlyTcp: false,
+			},
+			brutal: {
+				enabled: false,
+				up: '1000 Mbps',
+				down: '1000 Mbps',
+			},
+		},
+		static_hd: {
+			type: 'socks5-chain',
+			flag: '🇺🇸',
+			name: 'US-StaticIP-via-HD',
+			server: '192.0.2.30',
+			port: 22324,
+			username: 'SOCKS-USER',
+			password: 'SOCKS-PASS',
+			dialer: 'hd',
+		},
+	},
+	rules: {
+		target: 'static_hd',
+		domainSuffix: ['x.com', 't.co'],
+		domainKeyword: ['openai', 'chatgpt'],
+		raw: ['DOMAIN-SUFFIX,example.test,static_hd,no-resolve'],
+	},
+	groupDefaults: {
+		OpenAi: ['static_hd'],
+		'美国节点': ['hd'],
+		'手动切换': ['static_hd', 'hd'],
+	},
+};
+
+test('builds full KV config from compact node ids', () => {
+	const output = buildCustomSubscription(SIMPLE_CONFIG);
+
+	assert.equal(output.enabled, true);
+	assert.equal(output.appendServerToName, true);
+	assert.match(output.clash.dns, /^dns:\n  enable: true\n/m);
+	assert.match(output.clash.dns, /fake-ip-range: 198\.18\.0\.1\/16/);
+	assert.equal(output.clash.addProxiesToGroups, true);
+
+	assert.deepEqual(output.clash.proxies.map(proxy => proxy.name), [
+		'🇸🇬 SP-TT-203.0.113.10',
+		'🇺🇸 US-HD-198.51.100.20',
+		'🇺🇸 US-StaticIP-via-HD',
+	]);
+	assert.match(output.clash.proxies[1].yaml, /client-fingerprint: firefox/);
+	assert.match(output.clash.proxies[1].yaml, /smux: \{enabled: false, protocol: "h2mux"/);
+	assert.match(output.clash.proxies[2].yaml, /dialer-proxy: "🇺🇸 US-HD-198\.51\.100\.20"/);
+	assert.match(output.clash.proxies[2].yaml, /username: "SOCKS-USER"/);
+
+	assert.deepEqual(output.clash.rules, [
+		'DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,t.co,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-KEYWORD,chatgpt,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,example.test,🇺🇸 US-StaticIP-via-HD,no-resolve',
+	]);
+	assert.deepEqual(output.clash.groupDefaults, {
+		OpenAi: ['🇺🇸 US-StaticIP-via-HD'],
+		'美国节点': ['🇺🇸 US-HD-198.51.100.20'],
+		'手动切换': ['🇺🇸 US-StaticIP-via-HD', '🇺🇸 US-HD-198.51.100.20'],
+	});
+	assert.equal(output.clash.emoji.servers['198.51.100.20'], '🇺🇸');
+	assert.ok(output.clash.emoji.patterns.some(pattern => pattern.flag === '🇯🇵'));
+});
+
+test('validates references to missing node ids', () => {
+	assert.throws(
+		() => buildCustomSubscription({
+			...SIMPLE_CONFIG,
+			nodes: {
+				...SIMPLE_CONFIG.nodes,
+				static_hd: {
+					...SIMPLE_CONFIG.nodes.static_hd,
+					dialer: 'missing',
+				},
+			},
+		}),
+		/unknown node id "missing"/,
+	);
+
+	assert.throws(
+		() => buildCustomSubscription({
+			...SIMPLE_CONFIG,
+			rules: {
+				...SIMPLE_CONFIG.rules,
+				target: 'missing',
+			},
+		}),
+		/unknown node id "missing"/,
+	);
+});
+
+test('CLI writes generated custom-subscription JSON', () => {
+	const tempDir = mkdtempSync(join(tmpdir(), 'edgetunnel-custom-sub-'));
+	try {
+		const input = join(tempDir, 'private.json');
+		const output = join(tempDir, 'custom-subscription.json');
+		writeFileSync(input, JSON.stringify(SIMPLE_CONFIG, null, 2));
+
+		const result = spawnSync(process.execPath, ['tools/build-custom-subscription.mjs', input, output], {
+			cwd: new URL('..', import.meta.url),
+			encoding: 'utf8',
+		});
+
+		assert.equal(result.status, 0, result.stderr || result.stdout);
+		const generated = JSON.parse(readFileSync(output, 'utf8'));
+		assert.equal(generated.clash.proxies[2].name, '🇺🇸 US-StaticIP-via-HD');
+		assert.match(result.stdout, /Wrote .*custom-subscription\.json/);
+	} finally {
+		rmSync(tempDir, { recursive: true, force: true });
+	}
+});
+
+test('checked-in compact example builds without private material', () => {
+	const example = JSON.parse(readFileSync(new URL('../custom-subscription.simple.example.json', import.meta.url), 'utf8'));
+	const generated = buildCustomSubscription(example);
+
+	assert.equal(generated.clash.proxies.length, 4);
+	assert.deepEqual(generated.clash.proxies.map(proxy => proxy.name), [
+		'🇸🇬 SP-TT-203.0.113.10',
+		'🇺🇸 US-HD-198.51.100.20',
+		'🇺🇸 US-StaticIP-via-HD',
+		'🇺🇸 US-StaticIP-via-TT',
+	]);
+	for (const node of Object.values(example.nodes)) {
+		assert.ok(isDocumentationIPv4(node.server), `example server ${node.server} must use a documentation IP`);
+	}
+});
