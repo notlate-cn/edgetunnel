@@ -30,6 +30,7 @@ wrangler-install.log
 .env
 .env.local
 .env.*.local
+wrangler.local.toml
 custom-subscription.json
 custom-subscription.private.json
 custom-subscription.generated.json

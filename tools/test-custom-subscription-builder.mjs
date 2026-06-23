@@ -255,6 +255,46 @@ test('deploy shell wrapper defaults to .env.local KV namespace and private confi
 	}
 });
 
+test('local Wrangler config generator writes KV binding without changing public template', () => {
+	const tempDir = mkdtempSync(join(tmpdir(), 'edgetunnel-wrangler-local-'));
+	try {
+		const envLocal = join(tempDir, '.env.local');
+		const publicTemplate = join(tempDir, 'wrangler.toml');
+		const localConfig = join(tempDir, 'wrangler.local.toml');
+
+		writeFileSync(envLocal, 'KV_NAMESPACE_ID=test-local-namespace\n');
+		writeFileSync(publicTemplate, [
+			'name = "v20251104"',
+			'main = "_worker.js"',
+			'',
+			'#[[kv_namespaces]]',
+			'#binding = "KV"',
+			'#id = ""',
+			'',
+		].join('\n'));
+
+		const result = spawnSync(process.execPath, [
+			'tools/write-wrangler-local.mjs',
+			'--env',
+			envLocal,
+			'--base',
+			publicTemplate,
+			'--output',
+			localConfig,
+		], {
+			cwd: new URL('..', import.meta.url),
+			encoding: 'utf8',
+		});
+
+		assert.equal(result.status, 0, result.stderr || result.stdout);
+		assert.match(readFileSync(localConfig, 'utf8'), /\[\[kv_namespaces\]\]\nbinding = "KV"\nid = "test-local-namespace"/);
+		assert.doesNotMatch(readFileSync(publicTemplate, 'utf8'), /test-local-namespace/);
+		assert.match(result.stdout, /Wrote .*wrangler\.local\.toml/);
+	} finally {
+		rmSync(tempDir, { recursive: true, force: true });
+	}
+});
+
 test('checked-in compact example builds without private material', () => {
 	const example = JSON.parse(readFileSync(new URL('../custom-subscription.simple.example.json', import.meta.url), 'utf8'));
 	const generated = buildCustomSubscription(example);
