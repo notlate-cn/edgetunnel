@@ -58,6 +58,7 @@ Equivalent explicit form:
 ```
 
 The default command reads `custom-subscription.private.json` and `KV_NAMESPACE_ID` from `.env.local`.
+If `.env.local` also contains `WORKER_HOST` and `UUID`, it prints ClashMac and Shadowrocket subscription links after upload.
 
 Dry run:
 

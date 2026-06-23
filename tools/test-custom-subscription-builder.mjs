@@ -234,7 +234,7 @@ test('deploy shell wrapper defaults to .env.local KV namespace and private confi
 		const previousEnvLocal = readFileSync(envLocal, 'utf8');
 
 		writeFileSync(privateConfig, JSON.stringify(SIMPLE_CONFIG, null, 2));
-		writeFileSync(envLocal, `${previousEnvLocal.replace(/\n?$/, '\n')}KV_NAMESPACE_ID=test-env-file-namespace\n`);
+		writeFileSync(envLocal, `${previousEnvLocal.replace(/\n?$/, '\n')}KV_NAMESPACE_ID=test-env-file-namespace\nUUID=00000000-0000-4000-8000-000000000000\nWORKER_HOST=example.workers.dev\n`);
 
 		const deployResult = spawnSync('./deploy.sh', ['--output', join(tempDir, 'generated.json'), '--dry-run'], {
 			cwd: repoRoot,
@@ -248,6 +248,8 @@ test('deploy shell wrapper defaults to .env.local KV namespace and private confi
 		assert.equal(deployResult.status, 0, deployResult.stderr || deployResult.stdout);
 		assert.match(deployResult.stdout, /from .*custom-subscription\.private\.json/);
 		assert.match(deployResult.stdout, /--namespace-id test-env-file-namespace --remote/);
+		assert.match(deployResult.stdout, /ClashMac:\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&clash/);
+		assert.match(deployResult.stdout, /Shadowrocket:\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&shadowrocket/);
 	} finally {
 		rmSync(tempDir, { recursive: true, force: true });
 	}
