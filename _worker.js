@@ -349,7 +349,10 @@ export default {
 						if (!ua.includes('mozilla')) responseHeaders["Content-Disposition"] = `attachment; filename*=utf-8''${encodeURIComponent(config_JSON.优选订阅生成.SUBNAME)}`;
 						const 协议类型 = ((url.searchParams.has('surge') || ua.includes('surge')) && config_JSON.协议类型 !== 'ss') ? 'tro' + 'jan' : config_JSON.协议类型;
 						let 订阅内容 = '';
-						if (订阅类型 === 'mixed') {
+						const 个人Shadowrocket订阅内容 = 订阅类型 === 'shadowrocket' ? 生成个人Shadowrocket订阅(个人订阅配置) : '';
+						if (个人Shadowrocket订阅内容) {
+							订阅内容 = 个人Shadowrocket订阅内容;
+						} else if (订阅类型使用本地Mixed生成(订阅类型)) {
 							const TLS分片参数 = config_JSON.TLS分片 == 'Shadowrocket' ? `&fragment=${encodeURIComponent('1,40-60,30-50,tlshello')}` : config_JSON.TLS分片 == 'Happ' ? `&fragment=${encodeURIComponent('3,1,tlshello')}` : '';
 							let 完整优选IP = [], 其他节点LINK = '', 反代IP池 = [];
 
@@ -485,7 +488,7 @@ export default {
 								});
 						}
 
-						if (订阅类型 === 'mixed' && (!ua.includes('mozilla') || url.searchParams.has('b64') || url.searchParams.has('base64'))) 订阅内容 = btoa(订阅内容);
+						if ((订阅类型 === 'shadowrocket') || (订阅类型 === 'mixed' && (!ua.includes('mozilla') || url.searchParams.has('b64') || url.searchParams.has('base64')))) 订阅内容 = btoa(订阅内容);
 
 						if (订阅类型 === 'singbox') {
 							订阅内容 = await Singbox订阅配置文件热补丁(订阅内容, config_JSON);
@@ -4177,6 +4180,9 @@ function log(...args) {
 const 个人订阅默认配置 = {
 	enabled: false,
 	appendServerToName: false,
+	shadowrocket: {
+		links: [],
+	},
 	clash: {
 		dns: '',
 		proxies: [],
@@ -4190,12 +4196,16 @@ const 个人订阅默认配置 = {
 	},
 };
 
+function 订阅类型使用本地Mixed生成(订阅类型) {
+	return 订阅类型 === 'mixed' || 订阅类型 === 'shadowrocket';
+}
+
 function 订阅类型需要Clash热补丁(订阅类型) {
-	return 订阅类型 === 'clash' || 订阅类型 === 'shadowrocket';
+	return 订阅类型 === 'clash';
 }
 
 function 获取订阅转换目标(订阅类型) {
-	return 订阅类型 === 'shadowrocket' ? 'clash' : 订阅类型;
+	return 订阅类型;
 }
 
 function 深克隆配置(value) {
@@ -4583,6 +4593,13 @@ function 应用个人Clash配置(clash_yaml, 配置 = {}) {
 	patched = 添加个人Clash规则(patched, clashConfig);
 	patched = 补齐Clash代理国旗(patched, clashConfig);
 	return patched;
+}
+
+function 生成个人Shadowrocket订阅(配置 = {}) {
+	const 个人配置 = 规范化个人订阅配置(配置);
+	if (!个人配置.enabled) return '';
+	const links = Array.isArray(个人配置.shadowrocket?.links) ? 个人配置.shadowrocket.links : [];
+	return links.map(link => String(link || '').trim()).filter(Boolean).join('\n');
 }
 
 function Clash订阅配置文件热补丁(Clash_原始订阅内容, config_JSON = {}) {

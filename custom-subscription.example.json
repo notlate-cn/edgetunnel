@@ -1,6 +1,14 @@
 {
   "enabled": true,
   "appendServerToName": true,
+  "shadowrocket": {
+    "links": [
+      "vless://YOUR-TT-UUID@203.0.113.10:443?encryption=none&security=reality&type=tcp&flow=xtls-rprx-vision&sni=www.microsoft.com&fp=chrome&pbk=YOUR-TT-REALITY-PUBLIC-KEY&sid=abcd#%F0%9F%87%B8%F0%9F%87%AC%20SP-TT-203.0.113.10",
+      "vless://YOUR-HD-UUID@198.51.100.20:443?encryption=none&security=reality&type=tcp&flow=xtls-rprx-vision&sni=addons.mozilla.org&fp=firefox&pbk=YOUR-HD-REALITY-PUBLIC-KEY&sid=#%F0%9F%87%BA%F0%9F%87%B8%20US-HD-198.51.100.20",
+      "socks5://YOUR-SOCKS-USERNAME:YOUR-SOCKS-PASSWORD@192.0.2.30:22324#%F0%9F%87%BA%F0%9F%87%B8%20US-StaticIP-via-HD",
+      "socks5://YOUR-SOCKS-USERNAME:YOUR-SOCKS-PASSWORD@192.0.2.30:22324#%F0%9F%87%BA%F0%9F%87%B8%20US-StaticIP-via-TT"
+    ]
+  },
   "clash": {
     "dns": "dns:\n  enable: true\n  ipv6: false\n  enhanced-mode: fake-ip\n  fake-ip-range: 198.18.0.1/16\n  use-hosts: true\n  nameserver:\n    - https://sm2.doh.pub/dns-query\n    - https://dns.alidns.com/dns-query\n  fake-ip-filter:\n    - '*.argotunnel.com'\n    - 'argotunnel.com'\n    - '*.cloudflare.com'\n    - 'browser.argotunnel.com'\n    - '*.cloudflarebridge.com'\n    - 'localhost'\n    - '+.lan'\n    - '+.local'\n  fallback:\n    - https://dns.google/dns-query\n    - https://cloudflare-dns.com/dns-query\n  fallback-filter:\n    geoip: true\n    geoip-code: CN\n    geosite:\n      - gfw\n    ipcidr:\n      - 240.0.0.0/4\n      - 127.0.0.1/32\n      - 0.0.0.0/32\n    domain:\n      - '+.google.com'\n      - '+.facebook.com'\n      - '+.youtube.com'\n",
     "proxies": [

@@ -9,8 +9,10 @@ function loadWorkerExports() {
 globalThis.__testExports = {
 	添加个人节点地址到备注,
 	应用个人Clash配置,
+	生成个人Shadowrocket订阅,
 	读取个人订阅配置,
 	获取订阅转换目标,
+	订阅类型使用本地Mixed生成,
 	订阅类型需要Clash热补丁,
 };
 `;
@@ -125,6 +127,26 @@ test('reads personal config from KV key custom-subscription.json', async () => {
 	assert.deepEqual(Array.from(config.clash.rules), ['DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve']);
 });
 
+test('builds Shadowrocket subscription from personal links', () => {
+	const { 生成个人Shadowrocket订阅 } = loadWorkerExports();
+	const output = 生成个人Shadowrocket订阅({
+		enabled: true,
+		shadowrocket: {
+			links: [
+				'vless://uuid@example.com:443?security=reality#Example',
+				'socks5://user:pass@192.0.2.30:22324#Static',
+			],
+		},
+	});
+
+	assert.equal(output, [
+		'vless://uuid@example.com:443?security=reality#Example',
+		'socks5://user:pass@192.0.2.30:22324#Static',
+	].join('\n'));
+	assert.equal(生成个人Shadowrocket订阅({ enabled: false, shadowrocket: { links: ['vless://unused'] } }), '');
+	assert.equal(生成个人Shadowrocket订阅({ enabled: true }), '');
+});
+
 function isDocumentationIPv4(ip) {
 	return /^192\.0\.2\.\d+$/.test(ip) || /^198\.51\.100\.\d+$/.test(ip) || /^203\.0\.113\.\d+$/.test(ip);
 }
@@ -143,11 +165,14 @@ test('public custom subscription examples use documentation IP ranges for proxy 
 	}
 });
 
-test('routes Shadowrocket requests through Clash YAML generation', () => {
-	const { 获取订阅转换目标, 订阅类型需要Clash热补丁 } = loadWorkerExports();
+test('routes Shadowrocket requests through local mixed generation', () => {
+	const { 获取订阅转换目标, 订阅类型使用本地Mixed生成, 订阅类型需要Clash热补丁 } = loadWorkerExports();
 
-	assert.equal(获取订阅转换目标('shadowrocket'), 'clash');
-	assert.equal(订阅类型需要Clash热补丁('shadowrocket'), true);
+	assert.equal(获取订阅转换目标('shadowrocket'), 'shadowrocket');
+	assert.equal(订阅类型使用本地Mixed生成('shadowrocket'), true);
+	assert.equal(订阅类型使用本地Mixed生成('mixed'), true);
+	assert.equal(订阅类型使用本地Mixed生成('clash'), false);
+	assert.equal(订阅类型需要Clash热补丁('shadowrocket'), false);
 	assert.equal(订阅类型需要Clash热补丁('clash'), true);
 	assert.equal(订阅类型需要Clash热补丁('singbox'), false);
 });

@@ -94,6 +94,12 @@ test('builds full KV config from compact node ids', () => {
 	assert.match(output.clash.proxies[1].yaml, /smux: \{enabled: false, protocol: "h2mux"/);
 	assert.match(output.clash.proxies[2].yaml, /dialer-proxy: "🇺🇸 US-HD-198\.51\.100\.20"/);
 	assert.match(output.clash.proxies[2].yaml, /username: "SOCKS-USER"/);
+	assert.equal(output.shadowrocket.links.length, 3);
+	assert.match(output.shadowrocket.links[0], /^vless:\/\/YOUR-TT-UUID@203\.0\.113\.10:443\?/);
+	assert.match(output.shadowrocket.links[0], /security=reality/);
+	assert.match(output.shadowrocket.links[0], /pbk=YOUR-TT-PUBLIC-KEY/);
+	assert.match(output.shadowrocket.links[1], /fp=firefox/);
+	assert.match(output.shadowrocket.links[2], /^socks5:\/\/SOCKS-USER:SOCKS-PASS@192\.0\.2\.30:22324#/);
 
 	assert.deepEqual(output.clash.rules, [
 		'DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve',

@@ -474,6 +474,55 @@ function buildProxyYaml(node, proxyName, idToName, path) {
 	throw new Error(`${path}.type must be one of: vless-reality, socks5, socks5-chain`);
 }
 
+function encodeShareName(name) {
+	return encodeURIComponent(name);
+}
+
+function formatShareServer(server) {
+	return String(server).includes(':') && !String(server).startsWith('[') ? `[${server}]` : server;
+}
+
+function buildVlessRealityLink(node, proxyName, path) {
+	for (const key of ['server', 'uuid', 'servername', 'publicKey']) {
+		assertRequiredString(node[key], `${path}.${key}`);
+	}
+
+	const params = new URLSearchParams();
+	params.set('encryption', 'none');
+	params.set('security', 'reality');
+	params.set('type', node.network ?? 'tcp');
+	params.set('flow', node.flow ?? 'xtls-rprx-vision');
+	params.set('sni', node.servername);
+	params.set('fp', node.clientFingerprint ?? 'chrome');
+	params.set('pbk', node.publicKey);
+	params.set('sid', node.shortId ?? '');
+	return `vless://${node.uuid}@${formatShareServer(node.server)}:${node.port ?? 443}?${params.toString()}#${encodeShareName(proxyName)}`;
+}
+
+function buildSocks5Link(node, proxyName, path) {
+	for (const key of ['server', 'port', 'username', 'password']) {
+		if (key === 'port' && typeof node[key] === 'number') continue;
+		assertRequiredString(node[key], `${path}.${key}`);
+	}
+
+	return `socks5://${encodeURIComponent(node.username)}:${encodeURIComponent(node.password)}@${formatShareServer(node.server)}:${node.port}#${encodeShareName(proxyName)}`;
+}
+
+function buildShadowrocketLink(node, proxyName, path) {
+	if (node.shadowrocket === false || node.shadowrocket?.enabled === false) return null;
+	if (node.shadowrocketLink) {
+		assertRequiredString(node.shadowrocketLink, `${path}.shadowrocketLink`);
+		return node.shadowrocketLink;
+	}
+	if (node.shadowrocket?.link) {
+		assertRequiredString(node.shadowrocket.link, `${path}.shadowrocket.link`);
+		return node.shadowrocket.link;
+	}
+	if (node.type === 'vless-reality') return buildVlessRealityLink(node, proxyName, path);
+	if (node.type === 'socks5' || node.type === 'socks5-chain') return buildSocks5Link(node, proxyName, path);
+	return null;
+}
+
 function buildRules(configRules, idToName) {
 	const rules = configRules || {};
 	if (!rules || typeof rules !== 'object' || Array.isArray(rules)) throw new Error('rules must be an object');
@@ -561,10 +610,16 @@ export function buildCustomSubscription(config) {
 			yaml: buildProxyYaml(node, name, idToName, `nodes.${nodeId}`),
 		};
 	});
+	const shadowrocketLinks = Object.entries(nodes)
+		.map(([nodeId, node]) => buildShadowrocketLink(node, idToName.get(nodeId), `nodes.${nodeId}`))
+		.filter(Boolean);
 
 	return {
 		enabled: config.enabled !== false,
 		appendServerToName: config.appendServerToName === true,
+		shadowrocket: {
+			links: shadowrocketLinks,
+		},
 		clash: {
 			dns: resolveDnsBlock(config),
 			proxies,
