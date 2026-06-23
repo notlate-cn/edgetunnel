@@ -9,6 +9,8 @@ Maintain only `custom-subscription.private.json`, generate `custom-subscription.
 - `custom-subscription.simple.example.json`: safe compact template for local editing.
 - `custom-subscription.private.json`: your real local config. This file is ignored by Git.
 - `custom-subscription.json`: generated KV payload. This file is ignored by Git.
+- `build.sh`: builds the generated KV payload.
+- `deploy.sh`: builds and uploads the generated KV payload.
 - `tools/build-custom-subscription.mjs`: builds the generated KV payload.
 - `tools/deploy-custom-subscription.mjs`: builds and uploads the generated KV payload.
 
@@ -40,25 +42,32 @@ The builder resolves those ids to final Clash proxy names, such as `🇺🇸 US-
 ## Generate Only
 
 ```bash
-node tools/build-custom-subscription.mjs
+./build.sh
 ```
 
 Equivalent explicit form:
 
 ```bash
-node tools/build-custom-subscription.mjs custom-subscription.private.json custom-subscription.json
+./build.sh custom-subscription.private.json custom-subscription.json
 ```
 
 ## Upload To KV
 
 ```bash
-node tools/deploy-custom-subscription.mjs custom-subscription.private.json --namespace-id <KV_NAMESPACE_ID>
+./deploy.sh custom-subscription.private.json --namespace-id <KV_NAMESPACE_ID>
 ```
 
 Dry run:
 
 ```bash
-node tools/deploy-custom-subscription.mjs custom-subscription.private.json --namespace-id <KV_NAMESPACE_ID> --dry-run
+./deploy.sh custom-subscription.private.json --namespace-id <KV_NAMESPACE_ID> --dry-run
+```
+
+You can also set the namespace once for the current shell:
+
+```bash
+export KV_NAMESPACE_ID=<KV_NAMESPACE_ID>
+./deploy.sh custom-subscription.private.json
 ```
 
 The upload command writes the generated value to:

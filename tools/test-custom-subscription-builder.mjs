@@ -159,6 +159,40 @@ test('CLI writes generated custom-subscription JSON', () => {
 	}
 });
 
+test('shell wrappers run build and deploy dry-run commands', () => {
+	const tempDir = mkdtempSync(join(tmpdir(), 'edgetunnel-custom-sub-sh-'));
+	try {
+		const input = join(tempDir, 'private.json');
+		const buildOutput = join(tempDir, 'custom-subscription.json');
+		const deployOutput = join(tempDir, 'custom-subscription-deploy.json');
+		writeFileSync(input, JSON.stringify(SIMPLE_CONFIG, null, 2));
+
+		const buildResult = spawnSync('./build.sh', [input, buildOutput], {
+			cwd: new URL('..', import.meta.url),
+			encoding: 'utf8',
+		});
+		assert.equal(buildResult.status, 0, buildResult.stderr || buildResult.stdout);
+		const generated = JSON.parse(readFileSync(buildOutput, 'utf8'));
+		assert.equal(generated.clash.proxies[0].name, '🇸🇬 SP-TT-203.0.113.10');
+
+		const deployResult = spawnSync('./deploy.sh', [
+			input,
+			'--namespace-id',
+			'test-namespace',
+			'--output',
+			deployOutput,
+			'--dry-run',
+		], {
+			cwd: new URL('..', import.meta.url),
+			encoding: 'utf8',
+		});
+		assert.equal(deployResult.status, 0, deployResult.stderr || deployResult.stdout);
+		assert.match(deployResult.stdout, /Dry run: npx wrangler kv key put custom-subscription\.json --path .*custom-subscription-deploy\.json --namespace-id test-namespace/);
+	} finally {
+		rmSync(tempDir, { recursive: true, force: true });
+	}
+});
+
 test('checked-in compact example builds without private material', () => {
 	const example = JSON.parse(readFileSync(new URL('../custom-subscription.simple.example.json', import.meta.url), 'utf8'));
 	const generated = buildCustomSubscription(example);
