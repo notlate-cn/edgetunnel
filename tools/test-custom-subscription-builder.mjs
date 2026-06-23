@@ -187,7 +187,7 @@ test('shell wrappers run build and deploy dry-run commands', () => {
 			encoding: 'utf8',
 		});
 		assert.equal(deployResult.status, 0, deployResult.stderr || deployResult.stdout);
-		assert.match(deployResult.stdout, /Dry run: npx wrangler kv key put custom-subscription\.json --path .*custom-subscription-deploy\.json --namespace-id test-namespace/);
+		assert.match(deployResult.stdout, /Dry run: npx wrangler kv key put custom-subscription\.json --path .*custom-subscription-deploy\.json --namespace-id test-namespace --remote/);
 	} finally {
 		rmSync(tempDir, { recursive: true, force: true });
 	}

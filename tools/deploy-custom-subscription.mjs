@@ -13,6 +13,7 @@ Options:
   --output <path>       Generated file path. Default: custom-subscription.json
   --key <name>          KV key name. Default: custom-subscription.json
   --wrangler <command>  Wrangler command. Default: npx wrangler
+  --local              Upload to local Wrangler KV instead of remote Cloudflare KV
   --dry-run            Generate the file and print the upload command without running it
 
 Example:
@@ -27,6 +28,7 @@ function parseArgs(argv) {
 		key: 'custom-subscription.json',
 		wrangler: 'npx wrangler',
 		dryRun: false,
+		remote: true,
 		namespaceId: '',
 	};
 	const positionals = [];
@@ -37,6 +39,8 @@ function parseArgs(argv) {
 			options.help = true;
 		} else if (arg === '--dry-run') {
 			options.dryRun = true;
+		} else if (arg === '--local') {
+			options.remote = false;
 		} else if (arg === '--namespace-id') {
 			options.namespaceId = argv[++i] || '';
 		} else if (arg === '--output') {
@@ -88,6 +92,7 @@ try {
 		'--namespace-id',
 		options.namespaceId,
 	];
+	if (options.remote) wranglerArgs.push('--remote');
 
 	if (options.dryRun) {
 		console.log(`Dry run: ${[command, ...wranglerArgs].join(' ')}`);

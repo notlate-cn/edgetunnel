@@ -78,6 +78,8 @@ custom-subscription.json
 
 inside the KV namespace bound to the Worker as `KV`.
 
+`deploy.sh` uploads to the remote Cloudflare KV by default. For local Wrangler KV debugging, pass `--local`.
+
 ## Subscription URLs
 
 Use Clash YAML output for both clients:
