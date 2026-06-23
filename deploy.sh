@@ -9,17 +9,18 @@ if [[ -f .env.local ]]; then
 	set +a
 fi
 
-args=("$@")
 has_namespace_id=false
-for arg in "${args[@]}"; do
+for arg in "$@"; do
 	if [[ "$arg" == "--namespace-id" ]]; then
 		has_namespace_id=true
 		break
 	fi
 done
 
-if [[ ${#args[@]} -eq 0 || "${args[0]}" == --* ]]; then
-	args=("custom-subscription.private.json" "${args[@]}")
+if [[ $# -eq 0 || "${1:-}" == --* ]]; then
+	args=("custom-subscription.private.json" "$@")
+else
+	args=("$@")
 fi
 
 if [[ "$has_namespace_id" == false && -n "${KV_NAMESPACE_ID:-}" ]]; then

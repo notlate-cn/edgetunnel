@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -250,6 +250,43 @@ test('deploy shell wrapper defaults to .env.local KV namespace and private confi
 		assert.match(deployResult.stdout, /--namespace-id test-env-file-namespace --remote/);
 		assert.match(deployResult.stdout, /ClashMac:\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&clash/);
 		assert.match(deployResult.stdout, /Shadowrocket:\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&shadowrocket/);
+	} finally {
+		rmSync(tempDir, { recursive: true, force: true });
+	}
+});
+
+test('deploy shell wrapper runs with no arguments under nounset', () => {
+	const tempDir = mkdtempSync(join(tmpdir(), 'edgetunnel-custom-sub-no-args-'));
+	try {
+		const repoRoot = new URL('..', import.meta.url);
+		const privateConfig = new URL('../custom-subscription.private.json', import.meta.url);
+		const envLocal = new URL('../.env.local', import.meta.url);
+		const output = new URL('../custom-subscription.json', import.meta.url);
+		const fakeNpx = join(tempDir, 'npx');
+		const previousPrivateConfig = readFileSync(privateConfig, 'utf8');
+		const previousEnvLocal = readFileSync(envLocal, 'utf8');
+
+		writeFileSync(privateConfig, JSON.stringify(SIMPLE_CONFIG, null, 2));
+		writeFileSync(envLocal, `${previousEnvLocal.replace(/\n?$/, '\n')}KV_NAMESPACE_ID=test-env-file-namespace\n`);
+		writeFileSync(fakeNpx, '#!/usr/bin/env bash\necho "fake npx $*"\n');
+		chmodSync(fakeNpx, 0o755);
+
+		const deployResult = spawnSync('./deploy.sh', [], {
+			cwd: repoRoot,
+			encoding: 'utf8',
+			env: {
+				...process.env,
+				PATH: `${tempDir}:${process.env.PATH}`,
+			},
+		});
+
+		writeFileSync(privateConfig, previousPrivateConfig);
+		writeFileSync(envLocal, previousEnvLocal);
+		rmSync(output, { force: true });
+
+		assert.equal(deployResult.status, 0, deployResult.stderr || deployResult.stdout);
+		assert.match(deployResult.stdout, /from .*custom-subscription\.private\.json/);
+		assert.match(deployResult.stdout, /fake npx wrangler kv key put custom-subscription\.json --path custom-subscription\.json --namespace-id test-env-file-namespace --remote/);
 	} finally {
 		rmSync(tempDir, { recursive: true, force: true });
 	}
