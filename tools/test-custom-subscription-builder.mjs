@@ -223,6 +223,36 @@ test('shell wrappers run build and deploy dry-run commands', () => {
 	}
 });
 
+test('deploy shell wrapper defaults to .env.local KV namespace and private config', () => {
+	const tempDir = mkdtempSync(join(tmpdir(), 'edgetunnel-custom-sub-defaults-'));
+	try {
+		const repoRoot = new URL('..', import.meta.url);
+		const privateConfig = new URL('../custom-subscription.private.json', import.meta.url);
+		const envLocal = new URL('../.env.local', import.meta.url);
+		const output = new URL('../custom-subscription.json', import.meta.url);
+		const previousPrivateConfig = readFileSync(privateConfig, 'utf8');
+		const previousEnvLocal = readFileSync(envLocal, 'utf8');
+
+		writeFileSync(privateConfig, JSON.stringify(SIMPLE_CONFIG, null, 2));
+		writeFileSync(envLocal, `${previousEnvLocal.replace(/\n?$/, '\n')}KV_NAMESPACE_ID=test-env-file-namespace\n`);
+
+		const deployResult = spawnSync('./deploy.sh', ['--output', join(tempDir, 'generated.json'), '--dry-run'], {
+			cwd: repoRoot,
+			encoding: 'utf8',
+		});
+
+		writeFileSync(privateConfig, previousPrivateConfig);
+		writeFileSync(envLocal, previousEnvLocal);
+		rmSync(output, { force: true });
+
+		assert.equal(deployResult.status, 0, deployResult.stderr || deployResult.stdout);
+		assert.match(deployResult.stdout, /from .*custom-subscription\.private\.json/);
+		assert.match(deployResult.stdout, /--namespace-id test-env-file-namespace --remote/);
+	} finally {
+		rmSync(tempDir, { recursive: true, force: true });
+	}
+});
+
 test('checked-in compact example builds without private material', () => {
 	const example = JSON.parse(readFileSync(new URL('../custom-subscription.simple.example.json', import.meta.url), 'utf8'));
 	const generated = buildCustomSubscription(example);

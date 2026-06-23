@@ -54,20 +54,21 @@ Equivalent explicit form:
 ## Upload To KV
 
 ```bash
-./deploy.sh custom-subscription.private.json --namespace-id <KV_NAMESPACE_ID>
+./deploy.sh
 ```
+
+The default command reads `custom-subscription.private.json` and `KV_NAMESPACE_ID` from `.env.local`.
 
 Dry run:
 
 ```bash
-./deploy.sh custom-subscription.private.json --namespace-id <KV_NAMESPACE_ID> --dry-run
+./deploy.sh --dry-run
 ```
 
-You can also set the namespace once for the current shell:
+You can also override the defaults:
 
 ```bash
-export KV_NAMESPACE_ID=<KV_NAMESPACE_ID>
-./deploy.sh custom-subscription.private.json
+./deploy.sh custom-subscription.private.json --namespace-id <KV_NAMESPACE_ID>
 ```
 
 The upload command writes the generated value to:
