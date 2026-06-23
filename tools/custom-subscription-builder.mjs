@@ -34,13 +34,314 @@ const DEFAULT_DNS_BLOCK = `dns:
       - '+.youtube.com'
 `;
 
-const DEFAULT_EMOJI_PATTERNS = [
+const CURATED_EMOJI_PATTERNS = [
 	{ match: '新加坡|singapore|(?:^|[\\s_-])sg(?:[\\s_-]|$)|(?:^|[\\s_-])sp(?:[\\s_-]|$)', flag: '🇸🇬' },
 	{ match: '美国|美國|united\\s*states|america|(?:^|[\\s_-])us(?:[\\s_-]|$)|cloudflare|cf官方', flag: '🇺🇸' },
 	{ match: '香港|hong\\s*kong|(?:^|[\\s_-])hk(?:[\\s_-]|$)', flag: '🇭🇰' },
 	{ match: '台湾|台灣|taiwan|(?:^|[\\s_-])tw(?:[\\s_-]|$)', flag: '🇹🇼' },
 	{ match: '日本|japan|tokyo|(?:^|[\\s_-])jp(?:[\\s_-]|$)', flag: '🇯🇵' },
 	{ match: '韩国|韓國|korea|seoul|(?:^|[\\s_-])kr(?:[\\s_-]|$)', flag: '🇰🇷' },
+];
+
+const COUNTRY_EMOJI_ROWS = `
+AF|阿富汗|afghanistan
+AX|奥兰|奥兰群岛|aland|aland islands
+AL|阿尔巴尼亚|albania
+DZ|阿尔及利亚|algeria
+AS|美属萨摩亚|american samoa
+AD|安道尔|andorra
+AO|安哥拉|angola
+AI|安圭拉|anguilla
+AQ|南极洲|antarctica
+AG|安提瓜和巴布达|antigua|barbuda|antigua and barbuda
+AR|阿根廷|argentina
+AM|亚美尼亚|armenia
+AW|阿鲁巴|aruba
+AU|澳大利亚|澳洲|australia|sydney
+AT|奥地利|austria
+AZ|阿塞拜疆|azerbaijan
+BS|巴哈马|bahamas
+BH|巴林|bahrain
+BD|孟加拉|孟加拉国|bangladesh
+BB|巴巴多斯|barbados
+BY|白俄罗斯|belarus
+BE|比利时|belgium
+BZ|伯利兹|belize
+BJ|贝宁|benin
+BM|百慕大|bermuda
+BT|不丹|bhutan
+BO|玻利维亚|bolivia
+BQ|荷兰加勒比|caribbean netherlands|bonaire
+BA|波黑|波斯尼亚|bosnia|bosnia and herzegovina
+BW|博茨瓦纳|botswana
+BV|布韦岛|bouvet
+BR|巴西|brazil|sao paulo
+IO|英属印度洋|british indian ocean
+BN|文莱|brunei
+BG|保加利亚|bulgaria
+BF|布基纳法索|burkina faso
+BI|布隆迪|burundi
+CV|佛得角|cape verde|cabo verde
+KH|柬埔寨|cambodia
+CM|喀麦隆|cameroon
+CA|加拿大|canada|toronto|vancouver
+KY|开曼|开曼群岛|cayman|cayman islands
+CF|中非|中非共和国|central african republic
+TD|乍得|chad
+CL|智利|chile
+CN|中国|大陆|china|mainland
+CX|圣诞岛|christmas island
+CC|科科斯|cocos|keeling
+CO|哥伦比亚|colombia
+KM|科摩罗|comoros
+CG|刚果布|刚果共和国|congo brazzaville|republic of congo
+CD|刚果金|刚果民主共和国|congo kinshasa|democratic republic of congo
+CK|库克群岛|cook islands
+CR|哥斯达黎加|costa rica
+CI|科特迪瓦|象牙海岸|cote divoire|ivory coast
+HR|克罗地亚|croatia
+CU|古巴|cuba
+CW|库拉索|curacao
+CY|塞浦路斯|cyprus
+CZ|捷克|czech|czechia|czech republic
+DK|丹麦|denmark
+DJ|吉布提|djibouti
+DM|多米尼克|dominica
+DO|多米尼加|多米尼加共和国|dominican republic
+EC|厄瓜多尔|ecuador
+EG|埃及|egypt
+SV|萨尔瓦多|el salvador
+GQ|赤道几内亚|equatorial guinea
+ER|厄立特里亚|eritrea
+EE|爱沙尼亚|estonia
+SZ|斯威士兰|eswatini|swaziland
+ET|埃塞俄比亚|ethiopia
+FK|福克兰|falkland|falkland islands
+FO|法罗|法罗群岛|faroe|faroe islands
+FJ|斐济|fiji
+FI|芬兰|finland
+FR|法国|france|paris
+GF|法属圭亚那|french guiana
+PF|法属波利尼西亚|french polynesia
+TF|法属南部|french southern territories
+GA|加蓬|gabon
+GM|冈比亚|gambia
+GE|格鲁吉亚|georgia
+DE|德国|德國|germany|deutschland|frankfurt
+GH|加纳|ghana
+GI|直布罗陀|gibraltar
+GR|希腊|greece
+GL|格陵兰|greenland
+GD|格林纳达|grenada
+GP|瓜德罗普|guadeloupe
+GU|关岛|guam
+GT|危地马拉|guatemala
+GG|根西|guernsey
+GN|几内亚|guinea
+GW|几内亚比绍|guinea bissau
+GY|圭亚那|guyana
+HT|海地|haiti
+HM|赫德岛|heard island|mcdonald islands
+VA|梵蒂冈|vatican|holy see
+HN|洪都拉斯|honduras
+HK|香港|hong kong
+HU|匈牙利|hungary
+IS|冰岛|iceland
+IN|印度|india|mumbai
+ID|印度尼西亚|印尼|indonesia|jakarta
+IR|伊朗|iran
+IQ|伊拉克|iraq
+IE|爱尔兰|ireland
+IM|马恩岛|isle of man
+IL|以色列|israel
+IT|意大利|italy
+JM|牙买加|jamaica
+JP|日本|japan|tokyo|osaka
+JE|泽西|jersey
+JO|约旦|jordan
+KZ|哈萨克斯坦|kazakhstan
+KE|肯尼亚|kenya
+KI|基里巴斯|kiribati
+KP|朝鲜|北朝鲜|north korea
+KR|韩国|韓國|南韩|south korea|korea|seoul
+KW|科威特|kuwait
+KG|吉尔吉斯|吉尔吉斯斯坦|kyrgyzstan
+LA|老挝|laos
+LV|拉脱维亚|latvia
+LB|黎巴嫩|lebanon
+LS|莱索托|lesotho
+LR|利比里亚|liberia
+LY|利比亚|libya
+LI|列支敦士登|liechtenstein
+LT|立陶宛|lithuania
+LU|卢森堡|luxembourg
+MO|澳门|澳門|macao|macau
+MG|马达加斯加|madagascar
+MW|马拉维|malawi
+MY|马来西亚|malaysia|kuala lumpur
+MV|马尔代夫|maldives
+ML|马里|mali
+MT|马耳他|malta
+MH|马绍尔|马绍尔群岛|marshall islands
+MQ|马提尼克|martinique
+MR|毛里塔尼亚|mauritania
+MU|毛里求斯|mauritius
+YT|马约特|mayotte
+MX|墨西哥|mexico
+FM|密克罗尼西亚|micronesia
+MD|摩尔多瓦|moldova
+MC|摩纳哥|monaco
+MN|蒙古|mongolia
+ME|黑山|montenegro
+MS|蒙特塞拉特|montserrat
+MA|摩洛哥|morocco
+MZ|莫桑比克|mozambique
+MM|缅甸|myanmar|burma
+NA|纳米比亚|namibia
+NR|瑙鲁|nauru
+NP|尼泊尔|nepal
+NL|荷兰|netherlands|holland|amsterdam
+NC|新喀里多尼亚|new caledonia
+NZ|新西兰|new zealand
+NI|尼加拉瓜|nicaragua
+NE|尼日尔|niger
+NG|尼日利亚|nigeria
+NU|纽埃|niue
+NF|诺福克|norfolk
+MK|北马其顿|马其顿|north macedonia|macedonia
+MP|北马里亚纳|northern mariana islands
+NO|挪威|norway
+OM|阿曼|oman
+PK|巴基斯坦|pakistan
+PW|帕劳|palau
+PS|巴勒斯坦|palestine
+PA|巴拿马|panama
+PG|巴布亚新几内亚|papua new guinea
+PY|巴拉圭|paraguay
+PE|秘鲁|peru
+PH|菲律宾|philippines|manila
+PN|皮特凯恩|pitcairn
+PL|波兰|poland
+PT|葡萄牙|portugal
+PR|波多黎各|puerto rico
+QA|卡塔尔|qatar
+RE|留尼汪|reunion
+RO|罗马尼亚|romania
+RU|俄罗斯|俄国|russia|russian|moscow
+RW|卢旺达|rwanda
+BL|圣巴泰勒米|saint barthelemy
+SH|圣赫勒拿|saint helena
+KN|圣基茨和尼维斯|saint kitts|nevis
+LC|圣卢西亚|saint lucia
+MF|法属圣马丁|saint martin
+PM|圣皮埃尔|saint pierre|miquelon
+VC|圣文森特|saint vincent|grenadines
+WS|萨摩亚|samoa
+SM|圣马力诺|san marino
+ST|圣多美|sao tome|principe
+SA|沙特|沙特阿拉伯|saudi arabia|riyadh
+SN|塞内加尔|senegal
+RS|塞尔维亚|serbia
+SC|塞舌尔|seychelles
+SL|塞拉利昂|sierra leone
+SG|新加坡|singapore
+SX|荷属圣马丁|sint maarten
+SK|斯洛伐克|slovakia
+SI|斯洛文尼亚|slovenia
+SB|所罗门|所罗门群岛|solomon islands
+SO|索马里|somalia
+ZA|南非|south africa
+GS|南乔治亚|south georgia
+SS|南苏丹|south sudan
+ES|西班牙|spain|madrid
+LK|斯里兰卡|sri lanka
+SD|苏丹|sudan
+SR|苏里南|suriname
+SJ|斯瓦尔巴|svalbard|jan mayen
+SE|瑞典|sweden
+CH|瑞士|switzerland|zurich
+SY|叙利亚|syria
+TW|台湾|台灣|taiwan|taipei
+TJ|塔吉克斯坦|tajikistan
+TZ|坦桑尼亚|tanzania
+TH|泰国|thailand|bangkok
+TL|东帝汶|timor leste|east timor
+TG|多哥|togo
+TK|托克劳|tokelau
+TO|汤加|tonga
+TT|特立尼达和多巴哥|trinidad|tobago
+TN|突尼斯|tunisia
+TR|土耳其|turkey|turkiye|istanbul
+TM|土库曼|土库曼斯坦|turkmenistan
+TC|特克斯和凯科斯|turks|caicos
+TV|图瓦卢|tuvalu
+UG|乌干达|uganda
+UA|乌克兰|ukraine
+AE|阿联酋|阿拉伯联合酋长国|united arab emirates|uae|dubai
+GB|英国|英國|大不列颠|united kingdom|great britain|england|london|uk
+US|美国|美國|united states|america|usa|los angeles|new york|san jose
+UM|美国本土外小岛|united states minor outlying islands
+UY|乌拉圭|uruguay
+UZ|乌兹别克|乌兹别克斯坦|uzbekistan
+VU|瓦努阿图|vanuatu
+VE|委内瑞拉|venezuela
+VN|越南|vietnam|hanoi
+VG|英属维京|british virgin islands
+VI|美属维京|us virgin islands|virgin islands
+WF|瓦利斯和富图纳|wallis|futuna
+EH|西撒哈拉|western sahara
+YE|也门|yemen
+ZM|赞比亚|zambia
+ZW|津巴布韦|zimbabwe
+XK|科索沃|kosovo
+EU|欧洲|欧盟|europe|european union
+`;
+
+function escapeRegexText(value) {
+	return String(value)
+		.trim()
+		.split(/\s+/)
+		.map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+		.join('\\s*');
+}
+
+function emojiFlagFromCode(code) {
+	return String.fromCodePoint(...String(code).toUpperCase().split('').map(char => 0x1f1e6 + char.charCodeAt(0) - 65));
+}
+
+function emojiAliasPattern(alias) {
+	const normalized = String(alias).trim();
+	if (/^[a-z]{2,3}$/i.test(normalized)) return `(?:^|[\\\\s_-])${normalized.toLowerCase()}(?:[\\\\s_-]|$)`;
+	return escapeRegexText(normalized);
+}
+
+function buildCountryEmojiPatterns() {
+	return COUNTRY_EMOJI_ROWS
+		.trim()
+		.split('\n')
+		.map(row => row.trim())
+		.filter(Boolean)
+		.map(row => {
+			const [code, ...aliases] = row.split('|').map(value => value.trim()).filter(Boolean);
+			const priority = Math.max(...aliases.map(alias => alias.length), code.length);
+			return {
+				code,
+				aliases,
+				priority,
+			};
+		})
+		.sort((left, right) => right.priority - left.priority)
+		.map(({ code, aliases }) => {
+			return {
+				match: [...aliases, code.toLowerCase()].map(emojiAliasPattern).join('|'),
+				flag: emojiFlagFromCode(code),
+			};
+		});
+}
+
+const DEFAULT_EMOJI_PATTERNS = [
+	...buildCountryEmojiPatterns(),
+	...CURATED_EMOJI_PATTERNS,
 ];
 
 function assertPlainObject(value, path) {

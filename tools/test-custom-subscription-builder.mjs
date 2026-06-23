@@ -111,6 +111,36 @@ test('builds full KV config from compact node ids', () => {
 	assert.ok(output.clash.emoji.patterns.some(pattern => pattern.flag === '🇯🇵'));
 });
 
+test('default emoji patterns cover common countries and regions broadly', () => {
+	const output = buildCustomSubscription(SIMPLE_CONFIG);
+	const patterns = output.clash.emoji.patterns;
+
+	assert.ok(patterns.length >= 200);
+	for (const [sample, flag] of [
+		['德国 DE Frankfurt', '🇩🇪'],
+		['France Paris', '🇫🇷'],
+		['英国 UK London', '🇬🇧'],
+		['俄罗斯 RU Moscow', '🇷🇺'],
+		['India IN Mumbai', '🇮🇳'],
+		['Brazil BR Sao Paulo', '🇧🇷'],
+		['Australia AU Sydney', '🇦🇺'],
+		['阿联酋 UAE Dubai', '🇦🇪'],
+		['土耳其 TR Istanbul', '🇹🇷'],
+		['越南 VN Hanoi', '🇻🇳'],
+		['泰国 TH Bangkok', '🇹🇭'],
+		['马来西亚 MY Kuala Lumpur', '🇲🇾'],
+		['菲律宾 PH Manila', '🇵🇭'],
+		['印度尼西亚 ID Jakarta', '🇮🇩'],
+		['加拿大 CA Toronto', '🇨🇦'],
+		['台湾 TW Taipei', '🇹🇼'],
+		['香港 HK', '🇭🇰'],
+		['澳门 MO', '🇲🇴'],
+	]) {
+		const matched = patterns.find(pattern => new RegExp(pattern.match, 'i').test(sample));
+		assert.equal(matched?.flag, flag, sample);
+	}
+});
+
 test('validates references to missing node ids', () => {
 	assert.throws(
 		() => buildCustomSubscription({
