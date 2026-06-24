@@ -113,4 +113,4 @@ https://<your-domain>/sub?token=<token>&clash
 https://<your-domain>/sub?token=<token>&shadowrocket
 ```
 
-The ClashMac URL returns Clash YAML. The Shadowrocket URL returns a lightweight Shadowrocket `.conf` profile with `[Proxy]`, `[Proxy Group]`, and `[Rule]` sections generated from `custom-subscription.private.json`.
+The ClashMac URL returns Clash YAML. The Shadowrocket URL returns a lightweight Shadowrocket `.conf` profile with `[Proxy]`, `[Proxy Group]`, and `[Rule]` sections generated from `custom-subscription.private.json`, plus local CF preferred nodes generated directly by the Worker instead of the mixed subscription path.

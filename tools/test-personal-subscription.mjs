@@ -9,6 +9,7 @@ function loadWorkerExports() {
 globalThis.__testExports = {
 	添加个人节点地址到备注,
 	应用个人Clash配置,
+	生成ShadowrocketCF优选代理列表,
 	生成个人Shadowrocket订阅,
 	读取个人订阅配置,
 	获取订阅转换目标,
@@ -144,14 +145,41 @@ test('builds Shadowrocket subscription from personal links', () => {
 				'DOMAIN-KEYWORD,openai,Static,no-resolve',
 			],
 		},
-	});
+	}, ['CF官方优选1=vless,203.0.113.100,443,password=cf-uuid,tls=true']);
 
 	assert.match(output, /^\[General\]\n/m);
 	assert.match(output, /\[Proxy\]\nExample=vless,example\.com,443,password=uuid,tls=true\nStatic=socks5,192\.0\.2\.30,22324,user,pass/m);
-	assert.match(output, /\[Proxy Group\]\nProxy = select,Example,Static/m);
+	assert.match(output, /CF官方优选1=vless,203\.0\.113\.100,443,password=cf-uuid,tls=true/);
+	assert.match(output, /\[Proxy Group\]\nProxy = select,Example,Static,CF官方优选1/m);
 	assert.match(output, /\[Rule\]\nDOMAIN-KEYWORD,openai,Static,no-resolve\nFINAL,Proxy/m);
 	assert.equal(生成个人Shadowrocket订阅({ enabled: false, shadowrocket: { links: ['vless://unused'] } }), '');
 	assert.equal(生成个人Shadowrocket订阅({ enabled: true }), '');
+});
+
+test('builds Shadowrocket CF preferred proxies without mixed subscription links', () => {
+	const { 生成ShadowrocketCF优选代理列表 } = loadWorkerExports();
+	const proxies = 生成ShadowrocketCF优选代理列表(
+		[
+			'203.0.113.100:443#CF官方优选1',
+			'198.51.100.200:2053#CF官方优选2',
+			'sub://example.invalid#skip',
+		],
+		{
+			UUID: 'cf-uuid',
+			HOSTS: ['worker.example.com'],
+			Fingerprint: 'chrome',
+			完整节点路径: '/edge?ed=2560',
+			传输协议: 'ws',
+		},
+		{ enabled: true, appendServerToName: true },
+	);
+
+	assert.equal(proxies.length, 2);
+	assert.match(proxies[0], /^CF官方优选1-203\.0\.113\.100=vless,203\.0\.113\.100,443,password=cf-uuid,tls=true/);
+	assert.match(proxies[0], /obfs=websocket/);
+	assert.match(proxies[0], /peer=worker\.example\.com/);
+	assert.match(proxies[0], /obfs-path="\/edge\?ed=2560"/);
+	assert.match(proxies[1], /^CF官方优选2-198\.51\.100\.200=vless,198\.51\.100\.200,2053,password=cf-uuid,tls=true/);
 });
 
 function isDocumentationIPv4(ip) {
@@ -172,11 +200,11 @@ test('public custom subscription examples use documentation IP ranges for proxy 
 	}
 });
 
-test('routes Shadowrocket requests through local mixed generation', () => {
+test('does not route Shadowrocket requests through mixed generation', () => {
 	const { 获取订阅转换目标, 订阅类型使用本地Mixed生成, 订阅类型需要Clash热补丁 } = loadWorkerExports();
 
 	assert.equal(获取订阅转换目标('shadowrocket'), 'shadowrocket');
-	assert.equal(订阅类型使用本地Mixed生成('shadowrocket'), true);
+	assert.equal(订阅类型使用本地Mixed生成('shadowrocket'), false);
 	assert.equal(订阅类型使用本地Mixed生成('mixed'), true);
 	assert.equal(订阅类型使用本地Mixed生成('clash'), false);
 	assert.equal(订阅类型需要Clash热补丁('shadowrocket'), false);

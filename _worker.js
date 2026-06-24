@@ -349,7 +349,10 @@ export default {
 						if (!ua.includes('mozilla')) responseHeaders["Content-Disposition"] = `attachment; filename*=utf-8''${encodeURIComponent(config_JSON.优选订阅生成.SUBNAME)}`;
 						const 协议类型 = ((url.searchParams.has('surge') || ua.includes('surge')) && config_JSON.协议类型 !== 'ss') ? 'tro' + 'jan' : config_JSON.协议类型;
 						let 订阅内容 = '';
-						const 个人Shadowrocket订阅内容 = 订阅类型 === 'shadowrocket' ? 生成个人Shadowrocket订阅(个人订阅配置) : '';
+						const ShadowrocketCF优选代理列表 = 订阅类型 === 'shadowrocket'
+							? 生成ShadowrocketCF优选代理列表(await 读取本地CF优选列表(request, env, config_JSON), config_JSON, 个人订阅配置)
+							: [];
+						const 个人Shadowrocket订阅内容 = 订阅类型 === 'shadowrocket' ? 生成个人Shadowrocket订阅(个人订阅配置, ShadowrocketCF优选代理列表) : '';
 						const 使用个人Shadowrocket配置 = Boolean(个人Shadowrocket订阅内容 && /^\[General\]/.test(个人Shadowrocket订阅内容));
 						if (个人Shadowrocket订阅内容) {
 							订阅内容 = 个人Shadowrocket订阅内容;
@@ -4200,7 +4203,7 @@ const 个人订阅默认配置 = {
 };
 
 function 订阅类型使用本地Mixed生成(订阅类型) {
-	return 订阅类型 === 'mixed' || 订阅类型 === 'shadowrocket';
+	return 订阅类型 === 'mixed';
 }
 
 function 订阅类型需要Clash热补丁(订阅类型) {
@@ -4598,14 +4601,15 @@ function 应用个人Clash配置(clash_yaml, 配置 = {}) {
 	return patched;
 }
 
-function 生成个人Shadowrocket订阅(配置 = {}) {
+function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 	const 个人配置 = 规范化个人订阅配置(配置);
 	if (!个人配置.enabled) return '';
 	const shadowrocketConfig = 个人配置.shadowrocket || {};
 	const proxies = Array.isArray(shadowrocketConfig.proxies) ? shadowrocketConfig.proxies.map(line => String(line || '').trim()).filter(Boolean) : [];
 	const links = Array.isArray(shadowrocketConfig.links) ? shadowrocketConfig.links.map(link => String(link || '').trim()).filter(Boolean) : [];
-	if (proxies.length === 0) return links.join('\n');
-	const proxyNames = proxies.map(line => line.split('=')[0].trim()).filter(Boolean);
+	const allProxies = [...proxies, ...额外代理列表.map(line => String(line || '').trim()).filter(Boolean)];
+	if (allProxies.length === 0) return links.join('\n');
+	const proxyNames = allProxies.map(line => line.split('=')[0].trim()).filter(Boolean);
 	const rules = (Array.isArray(shadowrocketConfig.rules) ? shadowrocketConfig.rules : []).map(rule => String(rule || '').trim()).filter(Boolean).map(转换Shadowrocket规则);
 	return [
 		'[General]',
@@ -4614,7 +4618,7 @@ function 生成个人Shadowrocket订阅(配置 = {}) {
 		'skip-proxy = localhost,*.local,*.lan',
 		'',
 		'[Proxy]',
-		...proxies,
+		...allProxies,
 		'',
 		'[Proxy Group]',
 		`Proxy = select,${proxyNames.join(',')}`,
@@ -4624,6 +4628,60 @@ function 生成个人Shadowrocket订阅(配置 = {}) {
 		'FINAL,Proxy',
 		'',
 	].join('\n');
+}
+
+function 生成ShadowrocketCF优选代理列表(优选IP列表 = [], config_JSON = {}, 个人订阅配置 = {}) {
+	const uuid = config_JSON.UUID || '';
+	if (!uuid) return [];
+	const host = (Array.isArray(config_JSON.HOSTS) && config_JSON.HOSTS.length > 0 ? config_JSON.HOSTS[0] : config_JSON.HOST || '').replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+	if (!host) return [];
+	const fingerprint = config_JSON.Fingerprint || 'chrome';
+	const 节点路径 = 获取传输路径参数值(config_JSON, config_JSON.完整节点路径 || '/', false);
+	return 优选IP列表.map(原始地址 => {
+		const 节点 = 解析优选节点地址(原始地址);
+		if (!节点) return null;
+		const 节点备注 = 添加个人节点地址到备注(节点.备注, 节点.地址, 个人订阅配置);
+		return [
+			`${Shadowrocket字段值(节点备注)}=vless`,
+			节点.地址.replace(/^\[|\]$/g, ''),
+			节点.端口,
+			`password=${Shadowrocket字段值(uuid)}`,
+			'tls=true',
+			'obfs=websocket',
+			`peer=${Shadowrocket字段值(host)}`,
+			`obfs-path=${Shadowrocket引用值(节点路径)}`,
+			`obfs-header=${Shadowrocket引用值(`Host:${host}`)}`,
+			`fp=${Shadowrocket字段值(fingerprint)}`,
+		].join(',');
+	}).filter(Boolean);
+}
+
+async function 读取本地CF优选列表(request, env = {}, config_JSON = {}) {
+	const 本地IP库 = config_JSON.优选订阅生成?.本地IP库 || {};
+	if (本地IP库.随机IP !== false) return (await 生成随机IP(request, 本地IP库.随机数量 || 16, 本地IP库.指定端口 ?? -1))[0];
+	const addText = await env.KV?.get?.('ADD.txt');
+	if (addText) return await 整理成数组(addText);
+	return (await 生成随机IP(request, 本地IP库.随机数量 || 16, 本地IP库.指定端口 ?? -1))[0];
+}
+
+function 解析优选节点地址(原始地址 = '') {
+	const 文本 = String(原始地址 || '').trim();
+	if (!文本 || 文本.toLowerCase().includes('://') || /\bsub\s*=/i.test(文本)) return null;
+	const 匹配 = 文本.match(/^(\[[\da-fA-F:]+\]|[\d.]+|[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*)(?::(\d+))?(?:#(.+))?$/);
+	if (!匹配) return null;
+	return {
+		地址: 匹配[1],
+		端口: 匹配[2] || '443',
+		备注: 匹配[3] || 匹配[1].replace(/^\[|\]$/g, ''),
+	};
+}
+
+function Shadowrocket字段值(value = '') {
+	return String(value).replace(/[\r\n,=]+/g, ' ').trim();
+}
+
+function Shadowrocket引用值(value = '') {
+	return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
 function 转换Shadowrocket规则(rule) {
