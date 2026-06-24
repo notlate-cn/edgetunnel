@@ -114,17 +114,7 @@ https://<your-domain>/sub?token=<token>&shadowrocket-conf
 https://<your-domain>/sub?token=<token>&shadowrocket-links
 ```
 
-The ClashMac URL returns Clash YAML. `shadowrocket-conf` returns a Shadowrocket `.conf` profile with `[Proxy]`, `[Proxy Group]`, and `[Rule]` sections generated from `custom-subscription.private.json`, plus local CF preferred nodes generated directly by the Worker instead of the mixed subscription path by default. Add this URL from Shadowrocket's configuration download/import screen, not from the ordinary server `Subscribe` form. `shadowrocket-links` returns a plain node subscription for the ordinary `Subscribe` form, without rules.
-
-To stop appending CF preferred nodes to Shadowrocket outputs, set:
-
-```json
-{
-  "shadowrocket": {
-    "includeCfPreferred": false
-  }
-}
-```
+The ClashMac URL returns Clash YAML. `shadowrocket-conf` returns a Shadowrocket `.conf` profile with `[Proxy]`, `[Proxy Group]`, and `[Rule]` sections generated from `custom-subscription.private.json`, plus local CF preferred nodes generated directly by the Worker instead of the mixed subscription path. Add this URL from Shadowrocket's configuration download/import screen, not from the ordinary server `Subscribe` form. `shadowrocket-links` returns a plain node subscription for the ordinary `Subscribe` form, without rules.
 
 Shadowrocket rule order is:
 
