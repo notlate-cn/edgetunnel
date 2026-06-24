@@ -639,12 +639,6 @@ function buildRules(configRules, idToName) {
 function buildShadowrocketRuleSets(config = {}, idToName, rules) {
 	const output = [];
 	const shadowrocketConfig = config.shadowrocket || {};
-	if (shadowrocketConfig.useJohnshallAdBlock !== false) {
-		output.push({
-			url: shadowrocketConfig.adRuleSetUrl || DEFAULT_SHADOWROCKET_AD_RULESET_URL,
-			policy: 'REJECT',
-		});
-	}
 	for (const item of assertOptionalArray(shadowrocketConfig.ruleSets, 'shadowrocket.ruleSets')) {
 		if (typeof item === 'string') {
 			output.push(item);
@@ -702,6 +696,9 @@ function buildShadowrocketRules(config = {}, idToName, rules) {
 	for (const rule of assertOptionalArray(shadowrocketConfig.rules, 'shadowrocket.rules')) {
 		assertRequiredString(rule, 'shadowrocket.rules[]');
 		output.push(normalizeShadowrocketRule(rule, idToName, policyMap));
+	}
+	if (shadowrocketConfig.useJohnshallAdBlock !== false) {
+		output.push(`RULE-SET,${shadowrocketConfig.adRuleSetUrl || DEFAULT_SHADOWROCKET_AD_RULESET_URL},REJECT`);
 	}
 	if (shadowrocketConfig.useJohnshallLazyGroup !== false) {
 		output.push(...DEFAULT_JOHNSHALL_LAZY_GROUP_RULES

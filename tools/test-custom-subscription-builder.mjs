@@ -115,13 +115,9 @@ test('builds full KV config from compact node ids', () => {
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,YOUTUBE'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GitHub/GitHub.list,Proxy'));
 	assert.ok(output.shadowrocket.rules.includes('GEOIP,CN,DIRECT'));
+	assert.equal(output.shadowrocket.rules[5], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT');
 	assert.ok(!output.shadowrocket.rules.some(rule => /^FINAL,/i.test(rule)));
-	assert.deepEqual(output.shadowrocket.ruleSets, [
-		{
-			url: 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list',
-			policy: 'REJECT',
-		},
-	]);
+	assert.deepEqual(output.shadowrocket.ruleSets, []);
 	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'AI'), {
 		name: 'AI',
 		type: 'select',
