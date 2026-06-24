@@ -108,6 +108,9 @@ test('builds full KV config from compact node ids', () => {
 	assert.ok(!output.shadowrocket.rules.some(rule => rule.startsWith('DOMAIN-SUFFIX,x.com,')));
 	assert.ok(!output.shadowrocket.rules.some(rule => rule.startsWith('DOMAIN-KEYWORD,openai,')));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,静态住宅'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Telegram/Telegram.list,静态住宅'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PayPal/PayPal.list,静态住宅'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Twitter/Twitter.list,静态住宅'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,Proxy'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GitHub/GitHub.list,Proxy'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list,Google'));

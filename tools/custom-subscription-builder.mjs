@@ -71,6 +71,9 @@ const DEFAULT_POLICY_MAP = {
 	reject: 'REJECT',
 	...Object.fromEntries(JOHNSHALL_POLICY_GROUPS.map(group => [group, 'Proxy'])),
 	AI: '静态住宅',
+	TELEGRAM: '静态住宅',
+	PAYPAL: '静态住宅',
+	TWITTER: '静态住宅',
 	谷歌服务: 'Google',
 };
 const DEFAULT_PROXY_POOL_GROUPS = [
