@@ -119,7 +119,7 @@ Shadowrocket rule order is:
 
 1. Your custom Shadowrocket rule set from `rules/shadowrocket/static-hd.list`, mapped to `rules.target`.
 2. Johnshall ad-block rules, loaded from your GitHub-hosted `rules/shadowrocket/johnshall-ad-only.list` and mapped to `REJECT`.
-3. Johnshall `lazy_group.conf` routing rules. `AI`, `TELEGRAM`, `PAYPAL`, and `TWITTER` are mapped to `静态住宅`; `谷歌服务` is mapped to `Google`; `YOUTUBE` and other overseas categories are mapped to `Proxy`; domestic rules remain `DIRECT`.
+3. Johnshall `lazy_group.conf` routing rules. `AI`, `TELEGRAM`, `PAYPAL`, and `TWITTER` are mapped to `静态住宅`; `谷歌服务` is mapped to `Google`; `苹果服务` and `哔哩哔哩` are mapped to `DIRECT`; `YOUTUBE` and other overseas categories are mapped to `Proxy`; domestic rules remain `DIRECT`.
 4. `FINAL,Proxy`.
 
 This keeps your custom domains at the highest priority, so they override Johnshall categories when both match.
@@ -161,11 +161,15 @@ To tune Johnshall category routing, edit `shadowrocket.policyMap` in `custom-sub
       "PAYPAL": "静态住宅",
       "TWITTER": "静态住宅",
       "YOUTUBE": "Proxy",
-      "谷歌服务": "Google"
+      "谷歌服务": "Google",
+      "苹果服务": "DIRECT",
+      "哔哩哔哩": "DIRECT"
     }
   }
 }
 ```
+
+Rules in `rules/shadowrocket/static-hd.list` still have higher priority than these category rules, so custom entries such as `apple` and `icloud` can continue to use `静态住宅`.
 
 Values can be node ids from `nodes`, generated group names such as `Proxy`, or built-in policies such as `DIRECT` and `REJECT`.
 

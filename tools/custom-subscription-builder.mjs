@@ -75,6 +75,8 @@ const DEFAULT_POLICY_MAP = {
 	PAYPAL: '静态住宅',
 	TWITTER: '静态住宅',
 	谷歌服务: 'Google',
+	苹果服务: 'DIRECT',
+	哔哩哔哩: 'DIRECT',
 };
 const DEFAULT_PROXY_POOL_GROUPS = [
 	{ name: '静态住宅', proxies: ['static_hd', 'static_tt'] },
