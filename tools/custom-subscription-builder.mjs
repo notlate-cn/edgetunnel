@@ -37,6 +37,7 @@ const DEFAULT_DNS_BLOCK = `dns:
 `;
 
 const DEFAULT_SHADOWROCKET_RULESET_BASE_URL = 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket';
+const DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL = `${DEFAULT_SHADOWROCKET_RULESET_BASE_URL}/static-hd.list`;
 const DEFAULT_SHADOWROCKET_AD_RULESET_URL = `${DEFAULT_SHADOWROCKET_RULESET_BASE_URL}/johnshall-ad-only.list`;
 const DEFAULT_JOHNSHALL_LAZY_GROUP_RULES = readRuleLines('../rules/shadowrocket/johnshall-lazy-group.rules');
 const DEFAULT_SHADOWROCKET_POLICY_MAP = {
@@ -690,7 +691,11 @@ function buildShadowrocketRules(config = {}, idToName, rules) {
 	const shadowrocketConfig = config.shadowrocket || {};
 	const policyMap = buildShadowrocketPolicyMap(config, idToName);
 	const output = [];
-	if (shadowrocketConfig.inlineCustomRules !== false) {
+	const target = config.rules?.target ? requireKnownNodeName(idToName, config.rules.target) : null;
+	if (rules.length > 0 && target && shadowrocketConfig.inlineCustomRules !== true && shadowrocketConfig.useCustomRuleSet !== false) {
+		output.push(`RULE-SET,${shadowrocketConfig.customRuleSetUrl || DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL},${target},no-resolve`);
+	}
+	if (shadowrocketConfig.inlineCustomRules === true) {
 		output.push(...rules.map(rule => normalizeShadowrocketRule(rule, idToName, policyMap)));
 	}
 	for (const rule of assertOptionalArray(shadowrocketConfig.rules, 'shadowrocket.rules')) {

@@ -117,12 +117,28 @@ The ClashMac URL returns Clash YAML. The Shadowrocket URL returns a Shadowrocket
 
 Shadowrocket rule order is:
 
-1. Your custom `rules` from `custom-subscription.private.json`, mapped to `rules.target`.
+1. Your custom Shadowrocket rule set from `rules/shadowrocket/static-hd.list`, mapped to `rules.target`.
 2. Johnshall ad-block rules, loaded from your GitHub-hosted `rules/shadowrocket/johnshall-ad-only.list` and mapped to `REJECT`.
 3. Johnshall `lazy_group.conf` routing rules, with policy groups such as `AI`, `YOUTUBE`, `TWITTER`, `微软服务`, and `苹果服务`.
 4. `FINAL,Proxy`.
 
 This keeps your custom domains at the highest priority, so they override Johnshall categories when both match.
+
+To change the custom Shadowrocket static-IP rules, edit:
+
+```text
+rules/shadowrocket/static-hd.list
+```
+
+Commit and push the file. Shadowrocket loads it from GitHub Raw through:
+
+```text
+RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,🇺🇸 US-StaticIP-via-HD,no-resolve
+```
+
+No Worker deploy is needed for this rule-only change. Run `./deploy.sh` only when changing nodes, policy groups, Clash rules, or other private config.
+
+The compact `rules` block in `custom-subscription.private.json` is still used for ClashMac output and for choosing the Shadowrocket custom rule-set target policy through `rules.target`.
 
 To tune Johnshall category routing, edit `shadowrocket.groupDefaults` in `custom-subscription.private.json`:
 

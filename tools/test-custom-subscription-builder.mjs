@@ -104,18 +104,14 @@ test('builds full KV config from compact node ids', () => {
 	assert.match(output.shadowrocket.proxies[0], /^🇸🇬 SP-TT-203\.0\.113\.10=vless,203\.0\.113\.10,443,password=YOUR-TT-UUID,tls=true/);
 	assert.match(output.shadowrocket.proxies[0], /pbk=YOUR-TT-PUBLIC-KEY/);
 	assert.match(output.shadowrocket.proxies[2], /^🇺🇸 US-StaticIP-via-HD=socks5,192\.0\.2\.30,22324,SOCKS-USER,SOCKS-PASS/);
-	assert.deepEqual(output.shadowrocket.rules.slice(0, 5), [
-		'DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
-		'DOMAIN-SUFFIX,t.co,🇺🇸 US-StaticIP-via-HD,no-resolve',
-		'DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve',
-		'DOMAIN-KEYWORD,chatgpt,🇺🇸 US-StaticIP-via-HD,no-resolve',
-		'DOMAIN-SUFFIX,example.test,🇺🇸 US-StaticIP-via-HD,no-resolve',
-	]);
+	assert.equal(output.shadowrocket.rules[0], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,🇺🇸 US-StaticIP-via-HD,no-resolve');
+	assert.ok(!output.shadowrocket.rules.some(rule => rule.startsWith('DOMAIN-SUFFIX,x.com,')));
+	assert.ok(!output.shadowrocket.rules.some(rule => rule.startsWith('DOMAIN-KEYWORD,openai,')));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,AI'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,YOUTUBE'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GitHub/GitHub.list,Proxy'));
 	assert.ok(output.shadowrocket.rules.includes('GEOIP,CN,DIRECT'));
-	assert.equal(output.shadowrocket.rules[5], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT');
+	assert.equal(output.shadowrocket.rules[1], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT');
 	assert.ok(!output.shadowrocket.rules.some(rule => /^FINAL,/i.test(rule)));
 	assert.deepEqual(output.shadowrocket.ruleSets, []);
 	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'AI'), {
@@ -196,6 +192,25 @@ test('allows overriding Shadowrocket Johnshall policy routing', () => {
 		proxies: ['🇺🇸 US-StaticIP-via-HD', 'DIRECT'],
 	});
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Facebook/Facebook.list,🇺🇸 US-StaticIP-via-HD'));
+});
+
+test('can still inline custom Shadowrocket rules when requested', () => {
+	const output = buildCustomSubscription({
+		...SIMPLE_CONFIG,
+		shadowrocket: {
+			inlineCustomRules: true,
+			useJohnshallAdBlock: false,
+			useJohnshallLazyGroup: false,
+		},
+	});
+
+	assert.deepEqual(output.shadowrocket.rules, [
+		'DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,t.co,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-KEYWORD,chatgpt,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,example.test,🇺🇸 US-StaticIP-via-HD,no-resolve',
+	]);
 });
 
 test('validates references to missing node ids', () => {

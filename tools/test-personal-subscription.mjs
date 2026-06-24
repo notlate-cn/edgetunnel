@@ -146,7 +146,7 @@ test('builds Shadowrocket subscription from personal links', () => {
 			],
 			ruleSets: [
 				{
-					url: 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-ip.list',
+					url: 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list',
 					policy: 'Static',
 				},
 				'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/direct.list,DIRECT',
@@ -165,7 +165,7 @@ test('builds Shadowrocket subscription from personal links', () => {
 	assert.match(output, /\[Proxy\]\nExample=vless,example\.com,443,password=uuid,tls=true\nStatic=socks5,192\.0\.2\.30,22324,user,pass/m);
 	assert.match(output, /CF官方优选1=vless,203\.0\.113\.100,443,password=cf-uuid,tls=true/);
 	assert.match(output, /\[Proxy Group\]\nProxy = select,Example,Static,CF官方优选1\nAI = select,Static,Proxy,DIRECT/m);
-	assert.match(output, /\[Rule\]\nRULE-SET,https:\/\/raw\.githubusercontent\.com\/notlate-cn\/edgetunnel\/main\/rules\/shadowrocket\/static-ip\.list,Static\nRULE-SET,https:\/\/raw\.githubusercontent\.com\/notlate-cn\/edgetunnel\/main\/rules\/shadowrocket\/direct\.list,DIRECT\nDOMAIN-KEYWORD,openai,Static,no-resolve\nFINAL,Proxy/m);
+	assert.match(output, /\[Rule\]\nRULE-SET,https:\/\/raw\.githubusercontent\.com\/notlate-cn\/edgetunnel\/main\/rules\/shadowrocket\/static-hd\.list,Static\nRULE-SET,https:\/\/raw\.githubusercontent\.com\/notlate-cn\/edgetunnel\/main\/rules\/shadowrocket\/direct\.list,DIRECT\nDOMAIN-KEYWORD,openai,Static,no-resolve\nFINAL,Proxy/m);
 	assert.equal(生成个人Shadowrocket订阅({ enabled: false, shadowrocket: { links: ['vless://unused'] } }), '');
 	assert.equal(生成个人Shadowrocket订阅({ enabled: true }), '');
 });

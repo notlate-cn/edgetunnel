@@ -15,8 +15,7 @@
       "🇺🇸 US-StaticIP-via-TT=socks5,192.0.2.30,22324,YOUR-SOCKS-USERNAME,YOUR-SOCKS-PASSWORD"
     ],
     "rules": [
-      "DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,🇺🇸 US-StaticIP-via-HD,no-resolve",
       "RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT",
       "RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,AI",
       "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,YOUTUBE",
