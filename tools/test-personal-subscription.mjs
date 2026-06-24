@@ -15,6 +15,7 @@ globalThis.__testExports = {
 	生成ClashCF优选代理列表,
 	生成个人Shadowrocket订阅,
 	生成个人Shadowrocket节点订阅,
+	读取缓存CF优选列表,
 	读取个人订阅配置,
 	获取订阅转换目标,
 	订阅类型使用本地Mixed生成,
@@ -358,6 +359,33 @@ test('builds Shadowrocket CF preferred links for node subscriptions', () => {
 	assert.match(links[0], /host=worker\.example\.com/);
 	assert.match(links[0], /path=%2Fedge%3Fed%3D2560/);
 	assert.match(links[0], /#CF%E5%AE%98%E6%96%B9%E4%BC%98%E9%80%891-203\.0\.113\.100$/);
+});
+
+test('caches generated CF preferred list for repeated personal subscriptions', async () => {
+	const { 读取缓存CF优选列表 } = loadWorkerExports();
+	let getCount = 0;
+	const env = {
+		KV: {
+			async get(key) {
+				assert.equal(key, 'ADD.txt');
+				getCount++;
+				return '203.0.113.100:443#CF官方优选1';
+			},
+		},
+	};
+	const config = {
+		优选订阅生成: {
+			本地IP库: {
+				随机IP: false,
+				随机数量: 16,
+				指定端口: -1,
+			},
+		},
+	};
+
+	assert.deepEqual(Array.from(await 读取缓存CF优选列表({}, env, config)), ['203.0.113.100:443#CF官方优选1']);
+	assert.deepEqual(Array.from(await 读取缓存CF优选列表({}, env, config)), ['203.0.113.100:443#CF官方优选1']);
+	assert.equal(getCount, 1);
 });
 
 test('builds Clash CF preferred proxies without mixed subscription links', () => {

@@ -1,6 +1,7 @@
 ﻿const Version = '2026-06-17 01:41:21';
 let config_JSON, 反代IP = '', 启用SOCKS5反代 = null, 启用SOCKS5全局反代 = false, 我的SOCKS5账号 = '', parsedSocks5Address = {};
 let 缓存SOCKS5白名单 = null, 缓存反代IP, 缓存反代解析数组, 缓存反代数组索引 = 0, 启用反代兜底 = true, 调试日志打印 = false;
+let 缓存CF优选列表 = null, 缓存CF优选列表Key = '', 缓存CF优选列表过期时间 = 0;
 let SOCKS5白名单 = ['*tapecontent.net', '*cloudatacdn.com', '*loadshare.org', '*cdn-centaurus.com', 'scholar.google.com'];
 const Pages静态页面 = 'https://edt-pages.github.io';
 ///////////////////////////////////////////////////////全局常量和工具函数///////////////////////////////////////////////
@@ -354,7 +355,7 @@ export default {
 						const 协议类型 = ((url.searchParams.has('surge') || ua.includes('surge')) && config_JSON.协议类型 !== 'ss') ? 'tro' + 'jan' : config_JSON.协议类型;
 						let 订阅内容 = '';
 						const 需要ShadowrocketCF优选 = 订阅类型 === 'shadowrocket' || 订阅类型 === 'shadowrocket-links';
-						const ShadowrocketCF优选列表 = 需要ShadowrocketCF优选 ? await 读取本地CF优选列表(request, env, config_JSON) : [];
+						const ShadowrocketCF优选列表 = 需要ShadowrocketCF优选 ? await 读取缓存CF优选列表(request, env, config_JSON) : [];
 						const ShadowrocketCF优选代理列表 = 订阅类型 === 'shadowrocket'
 							? 生成ShadowrocketCF优选代理列表(ShadowrocketCF优选列表, config_JSON, 个人订阅配置)
 							: [];
@@ -362,7 +363,7 @@ export default {
 							? 生成ShadowrocketCF优选链接列表(ShadowrocketCF优选列表, config_JSON, 个人订阅配置)
 							: [];
 						const ClashCF优选代理列表 = 订阅类型 === 'clash'
-							? 生成ClashCF优选代理列表(await 读取本地CF优选列表(request, env, config_JSON), config_JSON, 个人订阅配置)
+							? 生成ClashCF优选代理列表(await 读取缓存CF优选列表(request, env, config_JSON), config_JSON, 个人订阅配置)
 							: [];
 						const Shadowrocket配置订阅URL = `${url.protocol}//${url.host}/sub?token=${订阅TOKEN}&shadowrocket-conf`;
 						const 个人Shadowrocket订阅内容 = 订阅类型 === 'shadowrocket' ? 生成个人Shadowrocket订阅(个人订阅配置, ShadowrocketCF优选代理列表, { updateUrl: Shadowrocket配置订阅URL }) : '';
@@ -4914,6 +4915,30 @@ async function 读取本地CF优选列表(request, env = {}, config_JSON = {}) {
 	const addText = await env.KV?.get?.('ADD.txt');
 	if (addText) return await 整理成数组(addText);
 	return (await 生成随机IP(request, 本地IP库.随机数量 || 16, 本地IP库.指定端口 ?? -1))[0];
+}
+
+function 获取CF优选缓存Key(config_JSON = {}) {
+	const 本地IP库 = config_JSON.优选订阅生成?.本地IP库 || {};
+	return JSON.stringify({
+		randomIP: 本地IP库.随机IP !== false,
+		count: 本地IP库.随机数量 || 16,
+		port: 本地IP库.指定端口 ?? -1,
+	});
+}
+
+async function 读取缓存CF优选列表(request, env = {}, config_JSON = {}) {
+	const 本地IP库 = config_JSON.优选订阅生成?.本地IP库 || {};
+	const ttlSeconds = Math.max(0, Number(本地IP库.缓存秒 ?? 本地IP库.cacheSeconds ?? 300) || 0);
+	const cacheKey = 获取CF优选缓存Key(config_JSON);
+	const now = Date.now();
+	if (ttlSeconds > 0 && 缓存CF优选列表 && 缓存CF优选列表Key === cacheKey && 缓存CF优选列表过期时间 > now) return [...缓存CF优选列表];
+	const 列表 = await 读取本地CF优选列表(request, env, config_JSON);
+	if (ttlSeconds > 0) {
+		缓存CF优选列表 = [...列表];
+		缓存CF优选列表Key = cacheKey;
+		缓存CF优选列表过期时间 = now + ttlSeconds * 1000;
+	}
+	return 列表;
 }
 
 function 解析优选节点地址(原始地址 = '') {
