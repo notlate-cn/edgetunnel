@@ -213,6 +213,31 @@ test('can still inline custom Shadowrocket rules when requested', () => {
 	]);
 });
 
+test('builds Clash and Shadowrocket custom rules from one source list', () => {
+	const output = buildCustomSubscription({
+		...SIMPLE_CONFIG,
+		rules: {
+			target: 'static_hd',
+			source: 'rules/shadowrocket/static-hd.list',
+		},
+		shadowrocket: {
+			useJohnshallAdBlock: false,
+			useJohnshallLazyGroup: false,
+		},
+	});
+
+	assert.deepEqual(output.clash.rules.slice(0, 4), [
+		'DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,t.co,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,gemini.gstatic.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,argotunnel.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
+	]);
+	assert.equal(output.clash.rules.length, 19);
+	assert.deepEqual(output.shadowrocket.rules, [
+		'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,🇺🇸 US-StaticIP-via-HD,no-resolve',
+	]);
+});
+
 test('validates references to missing node ids', () => {
 	assert.throws(
 		() => buildCustomSubscription({

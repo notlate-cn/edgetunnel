@@ -39,7 +39,7 @@ Keep references inside `rules` and `groupDefaults` as node ids:
 {
   "rules": {
     "target": "static_hd",
-    "domainKeyword": ["openai", "chatgpt"]
+    "source": "rules/shadowrocket/static-hd.list"
   },
   "groupDefaults": {
     "OpenAi": ["static_hd"],
@@ -48,7 +48,7 @@ Keep references inside `rules` and `groupDefaults` as node ids:
 }
 ```
 
-The builder resolves those ids to final Clash proxy names, such as `🇺🇸 US-StaticIP-via-HD`.
+The builder reads `rules.source` for ClashMac rules and resolves `rules.target` to final proxy names, such as `🇺🇸 US-StaticIP-via-HD`. Shadowrocket uses the same source path as a GitHub-hosted rule set.
 
 ## Generate Only
 
@@ -136,9 +136,9 @@ Commit and push the file. Shadowrocket loads it from GitHub Raw through:
 RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,🇺🇸 US-StaticIP-via-HD,no-resolve
 ```
 
-No Worker deploy is needed for this rule-only change. Run `./deploy.sh` only when changing nodes, policy groups, Clash rules, or other private config.
+For Shadowrocket-only changes, committing and pushing the list is enough because Shadowrocket loads it from GitHub Raw. To make ClashMac receive the same rule changes, run `./deploy.sh` after pushing so the generated Clash YAML in KV is refreshed.
 
-The compact `rules` block in `custom-subscription.private.json` is still used for ClashMac output and for choosing the Shadowrocket custom rule-set target policy through `rules.target`.
+The compact `rules` block in `custom-subscription.private.json` should normally only contain `target` and `source`; the domain entries live in `rules/shadowrocket/static-hd.list`.
 
 To tune Johnshall category routing, edit `shadowrocket.groupDefaults` in `custom-subscription.private.json`:
 

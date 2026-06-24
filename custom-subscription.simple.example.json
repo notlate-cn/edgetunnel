@@ -74,29 +74,7 @@
   },
   "rules": {
     "target": "static_hd",
-    "domainSuffix": [
-      "x.com",
-      "t.co",
-      "gemini.gstatic.com",
-      "argotunnel.com",
-      "cloudflare.com",
-      "cloudflarebridge.com"
-    ],
-    "domainKeyword": [
-      "twitter",
-      "twimg",
-      "anthropic",
-      "claude",
-      "claudemcpcontent",
-      "openai",
-      "chatgpt",
-      "datadoghq",
-      "adspower",
-      "browserleaks",
-      "apple",
-      "icloud",
-      "auth0"
-    ]
+    "source": "rules/shadowrocket/static-hd.list"
   },
   "groupDefaults": {
     "电报信息": ["static_hd"],

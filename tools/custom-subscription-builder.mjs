@@ -36,8 +36,10 @@ const DEFAULT_DNS_BLOCK = `dns:
       - '+.youtube.com'
 `;
 
-const DEFAULT_SHADOWROCKET_RULESET_BASE_URL = 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket';
-const DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL = `${DEFAULT_SHADOWROCKET_RULESET_BASE_URL}/static-hd.list`;
+const DEFAULT_GITHUB_RAW_BASE_URL = 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main';
+const DEFAULT_SHADOWROCKET_RULESET_BASE_URL = `${DEFAULT_GITHUB_RAW_BASE_URL}/rules/shadowrocket`;
+const DEFAULT_SHADOWROCKET_CUSTOM_RULESET_SOURCE = 'rules/shadowrocket/static-hd.list';
+const DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL = `${DEFAULT_GITHUB_RAW_BASE_URL}/${DEFAULT_SHADOWROCKET_CUSTOM_RULESET_SOURCE}`;
 const DEFAULT_SHADOWROCKET_AD_RULESET_URL = `${DEFAULT_SHADOWROCKET_RULESET_BASE_URL}/johnshall-ad-only.list`;
 const DEFAULT_JOHNSHALL_LAZY_GROUP_RULES = readRuleLines('../rules/shadowrocket/johnshall-lazy-group.rules');
 const DEFAULT_SHADOWROCKET_POLICY_MAP = {
@@ -405,6 +407,16 @@ function readRuleLines(relativePath) {
 		.filter(line => line && !line.startsWith('#'));
 }
 
+function readProjectRuleLines(sourcePath, path) {
+	assertRequiredString(sourcePath, path);
+	if (/^[a-z][a-z0-9+.-]*:/i.test(sourcePath)) throw new Error(`${path} must be a local repository path`);
+	return readRuleLines(`../${sourcePath.replace(/^\/+/, '')}`);
+}
+
+function buildGitHubRawUrl(sourcePath) {
+	return `${DEFAULT_GITHUB_RAW_BASE_URL}/${sourcePath.replace(/^\/+/, '')}`;
+}
+
 function quoteYamlString(value) {
 	return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
@@ -617,6 +629,16 @@ function buildRules(configRules, idToName) {
 	const output = [];
 	const target = rules.target ? requireKnownNodeName(idToName, rules.target) : null;
 
+	if (rules.source !== undefined) {
+		if (!target) throw new Error('rules.target is required when rules.source is set');
+		for (const rule of readProjectRuleLines(rules.source, 'rules.source')) {
+			const parts = rule.split(',').map(part => part.trim());
+			if (parts.length < 2 || parts.length > 3 || (parts.length === 3 && parts[2] !== 'no-resolve')) {
+				throw new Error('rules.source entries must be policy-less rules');
+			}
+			output.push(`${parts[0]},${parts[1]},${target},no-resolve`);
+		}
+	}
 	for (const domain of assertOptionalArray(rules.domainSuffix, 'rules.domainSuffix')) {
 		assertRequiredString(domain, 'rules.domainSuffix[]');
 		if (!target) throw new Error('rules.target is required when rules.domainSuffix is set');
@@ -693,7 +715,8 @@ function buildShadowrocketRules(config = {}, idToName, rules) {
 	const output = [];
 	const target = config.rules?.target ? requireKnownNodeName(idToName, config.rules.target) : null;
 	if (rules.length > 0 && target && shadowrocketConfig.inlineCustomRules !== true && shadowrocketConfig.useCustomRuleSet !== false) {
-		output.push(`RULE-SET,${shadowrocketConfig.customRuleSetUrl || DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL},${target},no-resolve`);
+		const customRuleSetUrl = shadowrocketConfig.customRuleSetUrl || (config.rules?.source ? buildGitHubRawUrl(config.rules.source) : DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL);
+		output.push(`RULE-SET,${customRuleSetUrl},${target},no-resolve`);
 	}
 	if (shadowrocketConfig.inlineCustomRules === true) {
 		output.push(...rules.map(rule => normalizeShadowrocketRule(rule, idToName, policyMap)));
