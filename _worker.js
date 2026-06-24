@@ -352,10 +352,17 @@ export default {
 						const ShadowrocketCF优选代理列表 = 订阅类型 === 'shadowrocket'
 							? 生成ShadowrocketCF优选代理列表(await 读取本地CF优选列表(request, env, config_JSON), config_JSON, 个人订阅配置)
 							: [];
+						const ClashCF优选代理列表 = 订阅类型 === 'clash'
+							? 生成ClashCF优选代理列表(await 读取本地CF优选列表(request, env, config_JSON), config_JSON, 个人订阅配置)
+							: [];
 						const 个人Shadowrocket订阅内容 = 订阅类型 === 'shadowrocket' ? 生成个人Shadowrocket订阅(个人订阅配置, ShadowrocketCF优选代理列表) : '';
+						const 个人Clash订阅内容 = 订阅类型 === 'clash' ? 生成个人Clash订阅(个人订阅配置, ClashCF优选代理列表) : '';
 						const 使用个人Shadowrocket配置 = Boolean(个人Shadowrocket订阅内容 && /^\[General\]/.test(个人Shadowrocket订阅内容));
+						const 使用个人Clash配置 = Boolean(个人Clash订阅内容 && /^proxies:\s*$|^dns:\s*$/m.test(个人Clash订阅内容));
 						if (个人Shadowrocket订阅内容) {
 							订阅内容 = 个人Shadowrocket订阅内容;
+						} else if (个人Clash订阅内容) {
+							订阅内容 = 个人Clash订阅内容;
 						} else if (订阅类型使用本地Mixed生成(订阅类型)) {
 							const TLS分片参数 = config_JSON.TLS分片 == 'Shadowrocket' ? `&fragment=${encodeURIComponent('1,40-60,30-50,tlshello')}` : config_JSON.TLS分片 == 'Happ' ? `&fragment=${encodeURIComponent('3,1,tlshello')}` : '';
 							let 完整优选IP = [], 其他节点LINK = '', 反代IP池 = [];
@@ -498,7 +505,7 @@ export default {
 							订阅内容 = await Singbox订阅配置文件热补丁(订阅内容, config_JSON);
 							responseHeaders["content-type"] = 'application/json; charset=utf-8';
 						} else if (订阅类型需要Clash热补丁(订阅类型)) {
-							订阅内容 = 应用个人Clash配置(订阅内容, 个人订阅配置);
+							if (!使用个人Clash配置) 订阅内容 = 应用个人Clash配置(订阅内容, 个人订阅配置);
 							订阅内容 = Clash订阅配置文件热补丁(订阅内容, config_JSON);
 							responseHeaders["content-type"] = 'application/x-yaml; charset=utf-8';
 						}
@@ -4341,15 +4348,27 @@ function 收集Clash代理名称(行列表, 开始, 结束) {
 	return 名称集合;
 }
 
-function 个人Clash代理条目列表(clashConfig = {}) {
-	return (Array.isArray(clashConfig.proxies) ? clashConfig.proxies : []).map(item => {
+function 规范化Clash代理条目(item) {
 		if (typeof item === 'string') {
 			const yaml = item.trimStart().startsWith('-') ? `  ${item.trimStart()}` : `  - ${item}`;
 			return { name: 提取YAML字段值(yaml, 'name'), yaml };
 		}
 		const yaml = String(item?.yaml || '').trimStart().startsWith('-') ? `  ${String(item.yaml).trimStart()}` : String(item?.yaml || '');
 		return { name: item?.name || 提取YAML字段值(yaml, 'name'), yaml };
-	}).filter(item => item.name && item.yaml);
+}
+
+function 个人Clash代理条目列表(clashConfig = {}) {
+	return (Array.isArray(clashConfig.proxies) ? clashConfig.proxies : []).map(规范化Clash代理条目).filter(item => item.name && item.yaml);
+}
+
+function 合并Clash代理条目(条目列表 = []) {
+	const 已有名称 = new Set(), output = [];
+	for (const item of 条目列表) {
+		if (!item?.name || !item?.yaml || 已有名称.has(item.name)) continue;
+		已有名称.add(item.name);
+		output.push(item);
+	}
+	return output;
 }
 
 function 个人Clash代理名称列表(clashConfig = {}) {
@@ -4686,6 +4705,44 @@ function 应用个人Clash配置(clash_yaml, 配置 = {}) {
 	return patched;
 }
 
+function 生成个人Clash订阅(配置 = {}, 额外代理列表 = []) {
+	const 个人配置 = 规范化个人订阅配置(配置);
+	if (!个人配置.enabled) return '';
+	const clashConfig = 个人配置.clash || {};
+	const proxies = 合并Clash代理条目([
+		...个人Clash代理条目列表(clashConfig),
+		...(Array.isArray(额外代理列表) ? 额外代理列表.map(规范化Clash代理条目).filter(item => item.name && item.yaml) : []),
+	]);
+	if (proxies.length === 0) return '';
+	const proxyNames = proxies.map(item => item.name);
+	const 原始分组 = Array.isArray(clashConfig.groups) ? clashConfig.groups : [];
+	const groupLines = 原始分组.map(group => 渲染个人Clash分组(group, proxyNames)).filter(Boolean);
+	const 包含Proxy分组 = 原始分组.some(group => group && typeof group === 'object' && String(group.name || '').trim() === 'Proxy');
+	if (!包含Proxy分组) groupLines.unshift(`  - {name: Proxy, type: select, proxies: [${渲染Clash代理引用列表(proxyNames)}]}`);
+	const rules = (Array.isArray(clashConfig.rules) ? clashConfig.rules : []).map(rule => String(rule || '').trim()).filter(Boolean);
+	const dns = String(clashConfig.dns || '').trim();
+	const output = [];
+	if (dns) output.push(dns, '');
+	output.push(
+		'mixed-port: 7890',
+		'allow-lan: true',
+		'mode: rule',
+		'log-level: info',
+		'',
+		'proxies:',
+		...proxies.map(item => item.yaml),
+		'',
+		'proxy-groups:',
+		...groupLines,
+		'',
+		'rules:',
+		...rules.map(rule => `  - ${rule}`),
+		'  - MATCH,Proxy',
+		'',
+	);
+	return output.join('\n');
+}
+
 function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 	const 个人配置 = 规范化个人订阅配置(配置);
 	if (!个人配置.enabled) return '';
@@ -4770,6 +4827,30 @@ function 生成ShadowrocketCF优选代理列表(优选IP列表 = [], config_JSON
 			`obfs-header=${Shadowrocket引用值(`Host:${host}`)}`,
 			`fp=${Shadowrocket字段值(fingerprint)}`,
 		].join(',');
+	}).filter(Boolean);
+}
+
+function 生成ClashCF优选代理列表(优选IP列表 = [], config_JSON = {}, 个人订阅配置 = {}) {
+	const uuid = config_JSON.UUID || '';
+	if (!uuid) return [];
+	const host = (Array.isArray(config_JSON.HOSTS) && config_JSON.HOSTS.length > 0 ? config_JSON.HOSTS[0] : config_JSON.HOST || '').replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+	if (!host) return [];
+	const fingerprint = config_JSON.Fingerprint || 'chrome';
+	const 节点路径 = 获取传输路径参数值(config_JSON, config_JSON.完整节点路径 || '/', false);
+	const 网络类型 = config_JSON.传输协议 === 'grpc' ? 'grpc' : config_JSON.传输协议 === 'xhttp' ? 'xhttp' : 'ws';
+	return 优选IP列表.map(原始地址 => {
+		const 节点 = 解析优选节点地址(原始地址);
+		if (!节点) return null;
+		const 节点名称 = 添加个人节点地址到备注(节点.备注, 节点.地址, 个人订阅配置);
+		const server = 节点.地址.replace(/^\[|\]$/g, '');
+		const common = `name: ${YAML引用字符串(节点名称)}, type: vless, server: ${YAML引用字符串(server)}, port: ${节点.端口}, uuid: ${YAML引用字符串(uuid)}, network: ${网络类型}, tls: true, udp: true, servername: ${YAML引用字符串(host)}, client-fingerprint: ${YAML引用字符串(fingerprint)}`;
+		let opts = '';
+		if (网络类型 === 'grpc') {
+			opts = `, grpc-opts: {grpc-service-name: ${YAML引用字符串(节点路径.split('?')[0] || '/')}}`;
+		} else if (网络类型 === 'ws') {
+			opts = `, ws-opts: {path: ${YAML引用字符串(节点路径)}, headers: {Host: ${YAML引用字符串(host)}}}`;
+		}
+		return { name: 节点名称, yaml: `  - {${common}${opts}}` };
 	}).filter(Boolean);
 }
 

@@ -162,6 +162,8 @@ To make ClashMac receive the same downloaded rule-set routing as Shadowrocket, e
 
 When this is enabled, `./build.sh` and `./deploy.sh` download the non-ad, non-custom Shadowrocket `RULE-SET` files and inline Clash-compatible entries into `clash.rules`. Unsupported Shadowrocket-only rule types such as `USER-AGENT` are skipped. This keeps ClashMac independent of remote `rule-providers`.
 
+When personal Clash proxies are configured, the Worker returns Clash YAML directly instead of calling the external subscription converter first. This keeps ClashMac subscriptions available even when the converter backend rejects a large generated config.
+
 To tune Johnshall category routing, edit `shadowrocket.policyMap` in `custom-subscription.private.json`:
 
 ```json
