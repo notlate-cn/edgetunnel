@@ -107,22 +107,23 @@ test('builds full KV config from compact node ids', () => {
 	assert.equal(output.shadowrocket.rules[0], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,🇺🇸 US-StaticIP-via-HD,no-resolve');
 	assert.ok(!output.shadowrocket.rules.some(rule => rule.startsWith('DOMAIN-SUFFIX,x.com,')));
 	assert.ok(!output.shadowrocket.rules.some(rule => rule.startsWith('DOMAIN-KEYWORD,openai,')));
-	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,AI'));
-	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,YOUTUBE'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,Proxy'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,Proxy'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GitHub/GitHub.list,Proxy'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list,Google'));
 	assert.ok(output.shadowrocket.rules.includes('GEOIP,CN,DIRECT'));
 	assert.equal(output.shadowrocket.rules[1], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT');
 	assert.ok(!output.shadowrocket.rules.some(rule => /^FINAL,/i.test(rule)));
 	assert.deepEqual(output.shadowrocket.ruleSets, []);
-	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'AI'), {
-		name: 'AI',
+	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'Google'), {
+		name: 'Google',
 		type: 'select',
-		proxies: ['🇺🇸 US-StaticIP-via-HD', 'Proxy', 'DIRECT'],
+		proxies: ['三网优化', '普通代理', '静态住宅', 'DIRECT'],
 	});
-	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'YOUTUBE'), {
-		name: 'YOUTUBE',
+	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'Proxy'), {
+		name: 'Proxy',
 		type: 'select',
-		proxies: ['Proxy', '🇺🇸 US-StaticIP-via-HD', 'DIRECT'],
+		proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'],
 	});
 
 	assert.deepEqual(output.clash.rules, [
@@ -176,22 +177,16 @@ test('allows overriding Shadowrocket Johnshall policy routing', () => {
 		...SIMPLE_CONFIG,
 		shadowrocket: {
 			useJohnshallAdBlock: false,
-			groupDefaults: {
-				YOUTUBE: ['static_hd', 'DIRECT'],
-			},
 			policyMap: {
 				FACEBOOK: 'static_hd',
+				YOUTUBE: 'static_hd',
 			},
 		},
 	});
 
 	assert.deepEqual(output.shadowrocket.ruleSets, []);
-	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'YOUTUBE'), {
-		name: 'YOUTUBE',
-		type: 'select',
-		proxies: ['🇺🇸 US-StaticIP-via-HD', 'DIRECT'],
-	});
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Facebook/Facebook.list,🇺🇸 US-StaticIP-via-HD'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,🇺🇸 US-StaticIP-via-HD'));
 });
 
 test('can still inline custom Shadowrocket rules when requested', () => {
@@ -238,6 +233,66 @@ test('builds Clash and Shadowrocket custom rules from one source list', () => {
 	]);
 });
 
+test('builds three proxy pools and routes Google separately from YouTube', () => {
+	const output = buildCustomSubscription({
+		...SIMPLE_CONFIG,
+		nodes: {
+			...SIMPLE_CONFIG.nodes,
+			static_tt: {
+				type: 'socks5-chain',
+				flag: '🇺🇸',
+				name: 'US-StaticIP-via-TT',
+				server: '192.0.2.31',
+				port: 22324,
+				username: 'SOCKS-USER',
+				password: 'SOCKS-PASS',
+				dialer: 'tt',
+			},
+		},
+		rules: {
+			target: '静态住宅',
+			source: 'rules/shadowrocket/static-hd.list',
+		},
+	});
+
+	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === '静态住宅'), {
+		name: '静态住宅',
+		type: 'select',
+		proxies: ['🇺🇸 US-StaticIP-via-HD', '🇺🇸 US-StaticIP-via-TT'],
+	});
+	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === '三网优化'), {
+		name: '三网优化',
+		type: 'select',
+		proxies: ['🇺🇸 US-HD-198.51.100.20'],
+	});
+	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === '普通代理'), {
+		name: '普通代理',
+		type: 'select',
+		proxies: ['🇸🇬 SP-TT-203.0.113.10', 'CF官方优选*'],
+	});
+	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'Google'), {
+		name: 'Google',
+		type: 'select',
+		proxies: ['三网优化', '普通代理', '静态住宅', 'DIRECT'],
+	});
+	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'Proxy'), {
+		name: 'Proxy',
+		type: 'select',
+		proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'],
+	});
+	assert.equal(output.shadowrocket.rules[0], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,静态住宅,no-resolve');
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list,Google'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,Proxy'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT'));
+	assert.deepEqual(output.clash.groups.find(group => group.name === '普通代理'), {
+		name: '普通代理',
+		type: 'select',
+		proxies: ['🇸🇬 SP-TT-203.0.113.10', 'CF官方优选*'],
+	});
+	assert.equal(output.clash.rules[0], 'DOMAIN-SUFFIX,x.com,静态住宅,no-resolve');
+}
+);
+
 test('validates references to missing node ids', () => {
 	assert.throws(
 		() => buildCustomSubscription({
@@ -253,16 +308,8 @@ test('validates references to missing node ids', () => {
 		/unknown node id "missing"/,
 	);
 
-	assert.throws(
-		() => buildCustomSubscription({
-			...SIMPLE_CONFIG,
-			rules: {
-				...SIMPLE_CONFIG.rules,
-				target: 'missing',
-			},
-		}),
-		/unknown node id "missing"/,
-	);
+	const output = buildCustomSubscription({ ...SIMPLE_CONFIG, rules: { target: '自定义策略', domainKeyword: ['example'] } });
+	assert.equal(output.clash.rules[0], 'DOMAIN-KEYWORD,example,自定义策略,no-resolve');
 });
 
 test('CLI writes generated custom-subscription JSON', () => {

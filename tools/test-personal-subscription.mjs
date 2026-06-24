@@ -69,6 +69,13 @@ test('applies personal Clash proxies, rules, dns, emoji and group default', () =
 					yaml: '  - {name: "🇺🇸 US-StaticIP-via-HD", type: socks5, server: 192.0.2.30, port: 22324}',
 				},
 			],
+			groups: [
+				{
+					name: '普通代理',
+					type: 'select',
+					proxies: ['US-HD', 'CF官方优选*'],
+				},
+			],
 			rules: ['DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve'],
 			addProxiesToGroups: true,
 			groupDefaults: {
@@ -85,6 +92,7 @@ test('applies personal Clash proxies, rules, dns, emoji and group default', () =
 	const input = `mode: Rule
 proxies:
   - {name: "US-HD", type: vless, server: 198.51.100.20}
+  - {name: "CF官方优选1", type: vless, server: 203.0.113.100}
 proxy-groups:
   - name: OpenAi
     type: select
@@ -101,7 +109,8 @@ rules:
 	assert.match(output, /name: "🇺🇸 US-HD"/);
 	assert.match(output, /name: "🇺🇸 US-StaticIP-via-HD"/);
 	assert.ok(output.indexOf('DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve') < output.indexOf('MATCH,OpenAi'));
-	assert.match(output, /proxy-groups:\n  - name: OpenAi\n    type: select\n    proxies:\n      - "🇺🇸 US-StaticIP-via-HD"\n      - "🇺🇸 US-HD"/);
+	assert.match(output, /name: OpenAi\n    type: select\n    proxies:\n      - "🇺🇸 US-StaticIP-via-HD"\n      - "🇺🇸 US-HD"/);
+	assert.match(output, /name: "普通代理", type: select, proxies: \["🇺🇸 US-HD", "🇺🇸 CF官方优选1"\]/);
 });
 
 test('reads personal config from KV key custom-subscription.json', async () => {
@@ -157,6 +166,11 @@ test('builds Shadowrocket subscription from personal links', () => {
 					type: 'select',
 					proxies: ['Static', 'Proxy', 'DIRECT'],
 				},
+				{
+					name: '普通代理',
+					type: 'select',
+					proxies: ['Example', 'CF官方优选*'],
+				},
 			],
 		},
 	}, ['CF官方优选1=vless,203.0.113.100,443,password=cf-uuid,tls=true']);
@@ -164,7 +178,7 @@ test('builds Shadowrocket subscription from personal links', () => {
 	assert.match(output, /^\[General\]\n/m);
 	assert.match(output, /\[Proxy\]\nExample=vless,example\.com,443,password=uuid,tls=true\nStatic=socks5,192\.0\.2\.30,22324,user,pass/m);
 	assert.match(output, /CF官方优选1=vless,203\.0\.113\.100,443,password=cf-uuid,tls=true/);
-	assert.match(output, /\[Proxy Group\]\nProxy = select,Example,Static,CF官方优选1\nAI = select,Static,Proxy,DIRECT/m);
+	assert.match(output, /\[Proxy Group\]\nProxy = select,Example,Static,CF官方优选1\nAI = select,Static,Proxy,DIRECT\n普通代理 = select,Example,CF官方优选1/m);
 	assert.match(output, /\[Rule\]\nRULE-SET,https:\/\/raw\.githubusercontent\.com\/notlate-cn\/edgetunnel\/main\/rules\/shadowrocket\/static-hd\.list,Static\nRULE-SET,https:\/\/raw\.githubusercontent\.com\/notlate-cn\/edgetunnel\/main\/rules\/shadowrocket\/direct\.list,DIRECT\nDOMAIN-KEYWORD,openai,Static,no-resolve\nFINAL,Proxy/m);
 	assert.equal(生成个人Shadowrocket订阅({ enabled: false, shadowrocket: { links: ['vless://unused'] } }), '');
 	assert.equal(生成个人Shadowrocket订阅({ enabled: true }), '');

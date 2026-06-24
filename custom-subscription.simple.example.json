@@ -3,16 +3,6 @@
   "appendServerToName": true,
   "dnsPreset": "default",
   "addProxiesToGroups": true,
-  "shadowrocket": {
-    "groupDefaults": {
-      "AI": ["static_hd", "Proxy", "DIRECT"],
-      "TWITTER": ["static_hd", "Proxy", "DIRECT"],
-      "TELEGRAM": ["static_hd", "Proxy", "DIRECT"],
-      "微软服务": ["static_hd", "Proxy", "DIRECT"],
-      "苹果服务": ["static_hd", "DIRECT", "Proxy"],
-      "谷歌服务": ["Proxy", "static_hd", "DIRECT"]
-    }
-  },
   "nodes": {
     "tt": {
       "type": "vless-reality",
@@ -73,16 +63,16 @@
     }
   },
   "rules": {
-    "target": "static_hd",
+    "target": "静态住宅",
     "source": "rules/shadowrocket/static-hd.list"
   },
   "groupDefaults": {
-    "电报信息": ["static_hd"],
-    "OpenAi": ["static_hd"],
-    "OpenAI": ["static_hd"],
-    "微软服务": ["static_hd"],
-    "香港节点": ["hd"],
-    "美国节点": ["hd"]
+    "电报信息": ["Proxy"],
+    "OpenAi": ["静态住宅"],
+    "OpenAI": ["静态住宅"],
+    "微软服务": ["Proxy"],
+    "香港节点": ["普通代理"],
+    "美国节点": ["三网优化"]
   },
   "emoji": {
     "patterns": []

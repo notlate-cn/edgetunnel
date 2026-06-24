@@ -42,15 +42,6 @@ const DEFAULT_SHADOWROCKET_CUSTOM_RULESET_SOURCE = 'rules/shadowrocket/static-hd
 const DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL = `${DEFAULT_GITHUB_RAW_BASE_URL}/${DEFAULT_SHADOWROCKET_CUSTOM_RULESET_SOURCE}`;
 const DEFAULT_SHADOWROCKET_AD_RULESET_URL = `${DEFAULT_SHADOWROCKET_RULESET_BASE_URL}/johnshall-ad-only.list`;
 const DEFAULT_JOHNSHALL_LAZY_GROUP_RULES = readRuleLines('../rules/shadowrocket/johnshall-lazy-group.rules');
-const DEFAULT_SHADOWROCKET_POLICY_MAP = {
-	PROXY: 'Proxy',
-	Proxy: 'Proxy',
-	proxy: 'Proxy',
-	Direct: 'DIRECT',
-	direct: 'DIRECT',
-	Reject: 'REJECT',
-	reject: 'REJECT',
-};
 const JOHNSHALL_POLICY_GROUPS = [
 	'AI',
 	'YOUTUBE',
@@ -70,7 +61,24 @@ const JOHNSHALL_POLICY_GROUPS = [
 	'哔哩哔哩',
 	'TIKTOK',
 ];
-const STATIC_FIRST_SHADOWROCKET_GROUPS = new Set(['AI', 'TELEGRAM', 'PAYPAL', 'TWITTER', '微软服务', '苹果服务']);
+const DEFAULT_POLICY_MAP = {
+	PROXY: 'Proxy',
+	Proxy: 'Proxy',
+	proxy: 'Proxy',
+	Direct: 'DIRECT',
+	direct: 'DIRECT',
+	Reject: 'REJECT',
+	reject: 'REJECT',
+	...Object.fromEntries(JOHNSHALL_POLICY_GROUPS.map(group => [group, 'Proxy'])),
+	谷歌服务: 'Google',
+};
+const DEFAULT_PROXY_POOL_GROUPS = [
+	{ name: '静态住宅', proxies: ['static_hd', 'static_tt'] },
+	{ name: '三网优化', proxies: ['hd'] },
+	{ name: '普通代理', proxies: ['tt', 'CF官方优选*'] },
+	{ name: 'Google', proxies: ['三网优化', '普通代理', '静态住宅', 'DIRECT'] },
+	{ name: 'Proxy', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
+];
 
 const CURATED_EMOJI_PATTERNS = [
 	{ match: '新加坡|singapore|(?:^|[\\s_-])sg(?:[\\s_-]|$)|(?:^|[\\s_-])sp(?:[\\s_-]|$)', flag: '🇸🇬' },
@@ -450,6 +458,11 @@ function resolveNodeName(idToName, value) {
 	return value;
 }
 
+function resolvePolicyName(idToName, value) {
+	assertRequiredString(value, 'policy');
+	return resolveNodeName(idToName, value);
+}
+
 function requireKnownNodeName(idToName, value) {
 	if (!idToName.has(value)) throw new Error(`unknown node id "${value}"`);
 	return idToName.get(value);
@@ -627,7 +640,7 @@ function buildRules(configRules, idToName) {
 	const rules = configRules || {};
 	if (!rules || typeof rules !== 'object' || Array.isArray(rules)) throw new Error('rules must be an object');
 	const output = [];
-	const target = rules.target ? requireKnownNodeName(idToName, rules.target) : null;
+	const target = rules.target ? resolvePolicyName(idToName, rules.target) : null;
 
 	if (rules.source !== undefined) {
 		if (!target) throw new Error('rules.target is required when rules.source is set');
@@ -685,18 +698,21 @@ function shadowrocketPolicyIndex(parts) {
 	return parts.length - 1;
 }
 
-function buildShadowrocketPolicyMap(config, idToName) {
-	const shadowrocketConfig = config.shadowrocket || {};
-	const configuredMap = shadowrocketConfig.policyMap || {};
-	if (shadowrocketConfig.policyMap) assertPlainObject(configuredMap, 'shadowrocket.policyMap');
+function buildPolicyMap(config, idToName, path) {
+	const configuredMap = config?.policyMap || {};
+	if (config?.policyMap) assertPlainObject(configuredMap, `${path}.policyMap`);
 	return Object.fromEntries(Object.entries({
-		...DEFAULT_SHADOWROCKET_POLICY_MAP,
+		...DEFAULT_POLICY_MAP,
 		...configuredMap,
 	}).map(([from, to]) => {
-		assertRequiredString(from, 'shadowrocket.policyMap key');
-		assertRequiredString(to, `shadowrocket.policyMap.${from}`);
-		return [from, resolveNodeName(idToName, to)];
+		assertRequiredString(from, `${path}.policyMap key`);
+		assertRequiredString(to, `${path}.policyMap.${from}`);
+		return [from, resolvePolicyName(idToName, to)];
 	}));
+}
+
+function buildShadowrocketPolicyMap(config, idToName) {
+	return buildPolicyMap(config.shadowrocket || {}, idToName, 'shadowrocket');
 }
 
 function normalizeShadowrocketRule(rule, idToName, policyMap = {}) {
@@ -713,7 +729,7 @@ function buildShadowrocketRules(config = {}, idToName, rules) {
 	const shadowrocketConfig = config.shadowrocket || {};
 	const policyMap = buildShadowrocketPolicyMap(config, idToName);
 	const output = [];
-	const target = config.rules?.target ? requireKnownNodeName(idToName, config.rules.target) : null;
+	const target = config.rules?.target ? resolvePolicyName(idToName, config.rules.target) : null;
 	if (rules.length > 0 && target && shadowrocketConfig.inlineCustomRules !== true && shadowrocketConfig.useCustomRuleSet !== false) {
 		const customRuleSetUrl = shadowrocketConfig.customRuleSetUrl || (config.rules?.source ? buildGitHubRawUrl(config.rules.source) : DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL);
 		output.push(`RULE-SET,${customRuleSetUrl},${target},no-resolve`);
@@ -744,41 +760,47 @@ function uniqueList(values) {
 	return output;
 }
 
-function buildDefaultShadowrocketGroup(groupName, target) {
-	if (STATIC_FIRST_SHADOWROCKET_GROUPS.has(groupName) && target) return uniqueList([target, 'Proxy', 'DIRECT']);
-	return uniqueList(['Proxy', target, 'DIRECT']);
+function resolveProxyList(proxies, idToName, path) {
+	return assertOptionalArray(proxies, path).map(proxy => resolvePolicyName(idToName, proxy));
 }
 
-function buildShadowrocketGroups(config = {}, idToName) {
-	const shadowrocketConfig = config.shadowrocket || {};
+function buildDefaultProxyGroups(idToName) {
+	return DEFAULT_PROXY_POOL_GROUPS.map(group => ({
+		name: group.name,
+		type: 'select',
+		proxies: uniqueList(group.proxies.map(proxy => resolveNodeName(idToName, proxy))),
+	})).filter(group => group.proxies.length > 0);
+}
+
+function buildConfiguredGroups(groups, idToName, path) {
 	const output = [];
-	const target = config.rules?.target ? requireKnownNodeName(idToName, config.rules.target) : null;
-	const groupDefaults = shadowrocketConfig.groupDefaults || {};
-	if (shadowrocketConfig.groupDefaults) assertPlainObject(groupDefaults, 'shadowrocket.groupDefaults');
-	if (shadowrocketConfig.useJohnshallLazyGroup !== false) {
-		for (const groupName of JOHNSHALL_POLICY_GROUPS) {
-			const proxies = groupDefaults[groupName] || buildDefaultShadowrocketGroup(groupName, target);
-			output.push({
-				name: groupName,
-				type: 'select',
-				proxies: assertOptionalArray(proxies, `shadowrocket.groupDefaults.${groupName}`).map(proxy => resolveNodeName(idToName, proxy)),
-			});
-		}
-	}
-	for (const group of assertOptionalArray(shadowrocketConfig.groups, 'shadowrocket.groups')) {
+	for (const group of assertOptionalArray(groups, `${path}.groups`)) {
 		if (typeof group === 'string') {
 			output.push(group);
 			continue;
 		}
-		assertPlainObject(group, 'shadowrocket.groups[]');
-		assertRequiredString(group.name, 'shadowrocket.groups[].name');
-		const proxies = assertOptionalArray(group.proxies, `shadowrocket.groups.${group.name}.proxies`);
+		assertPlainObject(group, `${path}.groups[]`);
+		assertRequiredString(group.name, `${path}.groups[].name`);
 		output.push({
 			name: group.name,
 			type: group.type || 'select',
-			proxies: proxies.map(proxy => resolveNodeName(idToName, proxy)),
+			proxies: resolveProxyList(group.proxies, idToName, `${path}.groups.${group.name}.proxies`),
 		});
 	}
+	return output;
+}
+
+function buildShadowrocketGroups(config = {}, idToName) {
+	const shadowrocketConfig = config.shadowrocket || {};
+	const output = shadowrocketConfig.useDefaultProxyGroups === false ? [] : buildDefaultProxyGroups(idToName);
+	output.push(...buildConfiguredGroups(shadowrocketConfig.groups, idToName, 'shadowrocket'));
+	return output;
+}
+
+function buildClashGroups(config = {}, idToName) {
+	const clashConfig = config.clash || {};
+	const output = clashConfig.useDefaultProxyGroups === false ? [] : buildDefaultProxyGroups(idToName);
+	output.push(...buildConfiguredGroups(clashConfig.groups, idToName, 'clash'));
 	return output;
 }
 
@@ -853,6 +875,7 @@ export function buildCustomSubscription(config) {
 	const shadowrocketRuleSets = buildShadowrocketRuleSets(config, idToName, rules);
 	const shadowrocketRules = buildShadowrocketRules(config, idToName, rules);
 	const shadowrocketGroups = buildShadowrocketGroups(config, idToName);
+	const clashGroups = buildClashGroups(config, idToName);
 
 	return {
 		enabled: config.enabled !== false,
@@ -868,6 +891,7 @@ export function buildCustomSubscription(config) {
 			dns: resolveDnsBlock(config),
 			proxies,
 			rules,
+			groups: clashGroups,
 			addProxiesToGroups: config.addProxiesToGroups !== false,
 			groupDefaults: buildGroupDefaults(config.groupDefaults, idToName),
 			emoji: buildEmoji(config, nodes),

@@ -38,17 +38,17 @@ Keep references inside `rules` and `groupDefaults` as node ids:
 ```json
 {
   "rules": {
-    "target": "static_hd",
+    "target": "静态住宅",
     "source": "rules/shadowrocket/static-hd.list"
   },
   "groupDefaults": {
-    "OpenAi": ["static_hd"],
-    "美国节点": ["hd"]
+    "OpenAi": ["静态住宅"],
+    "美国节点": ["三网优化"]
   }
 }
 ```
 
-The builder reads `rules.source` for ClashMac rules and resolves `rules.target` to final proxy names, such as `🇺🇸 US-StaticIP-via-HD`. Shadowrocket uses the same source path as a GitHub-hosted rule set.
+The builder reads `rules.source` for ClashMac rules and uses `rules.target` as the target policy group. Shadowrocket uses the same source path as a GitHub-hosted rule set.
 
 ## Generate Only
 
@@ -119,10 +119,20 @@ Shadowrocket rule order is:
 
 1. Your custom Shadowrocket rule set from `rules/shadowrocket/static-hd.list`, mapped to `rules.target`.
 2. Johnshall ad-block rules, loaded from your GitHub-hosted `rules/shadowrocket/johnshall-ad-only.list` and mapped to `REJECT`.
-3. Johnshall `lazy_group.conf` routing rules, with policy groups such as `AI`, `YOUTUBE`, `TWITTER`, `微软服务`, and `苹果服务`.
+3. Johnshall `lazy_group.conf` routing rules. `谷歌服务` is mapped to `Google`; `YOUTUBE` and other overseas categories are mapped to `Proxy`; domestic rules remain `DIRECT`.
 4. `FINAL,Proxy`.
 
 This keeps your custom domains at the highest priority, so they override Johnshall categories when both match.
+
+Default policy groups are:
+
+```text
+静态住宅 = US-StaticIP-via-HD, US-StaticIP-via-TT
+三网优化 = US-HD
+普通代理 = SP-TT, CF官方优选*
+Google = 三网优化, 普通代理, 静态住宅, DIRECT
+Proxy = 普通代理, 三网优化, 静态住宅, DIRECT
+```
 
 To change the custom Shadowrocket static-IP rules, edit:
 
@@ -133,22 +143,21 @@ rules/shadowrocket/static-hd.list
 Commit and push the file. Shadowrocket loads it from GitHub Raw through:
 
 ```text
-RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,🇺🇸 US-StaticIP-via-HD,no-resolve
+RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,静态住宅,no-resolve
 ```
 
 For Shadowrocket-only changes, committing and pushing the list is enough because Shadowrocket loads it from GitHub Raw. To make ClashMac receive the same rule changes, run `./deploy.sh` after pushing so the generated Clash YAML in KV is refreshed.
 
 The compact `rules` block in `custom-subscription.private.json` should normally only contain `target` and `source`; the domain entries live in `rules/shadowrocket/static-hd.list`.
 
-To tune Johnshall category routing, edit `shadowrocket.groupDefaults` in `custom-subscription.private.json`:
+To tune Johnshall category routing, edit `shadowrocket.policyMap` in `custom-subscription.private.json`:
 
 ```json
 {
   "shadowrocket": {
-    "groupDefaults": {
-      "AI": ["static_hd", "Proxy", "DIRECT"],
-      "TWITTER": ["static_hd", "Proxy", "DIRECT"],
-      "谷歌服务": ["Proxy", "static_hd", "DIRECT"]
+    "policyMap": {
+      "YOUTUBE": "Proxy",
+      "谷歌服务": "Google"
     }
   }
 }

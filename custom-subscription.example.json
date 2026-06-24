@@ -15,23 +15,39 @@
       "🇺🇸 US-StaticIP-via-TT=socks5,192.0.2.30,22324,YOUR-SOCKS-USERNAME,YOUR-SOCKS-PASSWORD"
     ],
     "rules": [
-      "RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,静态住宅,no-resolve",
       "RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT",
-      "RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,AI",
-      "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,YOUTUBE",
+      "RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,Proxy",
+      "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,Proxy",
+      "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list,Google",
       "GEOIP,CN,DIRECT"
     ],
     "ruleSets": [],
     "groups": [
       {
-        "name": "AI",
+        "name": "静态住宅",
         "type": "select",
-        "proxies": ["🇺🇸 US-StaticIP-via-HD", "Proxy", "DIRECT"]
+        "proxies": ["🇺🇸 US-StaticIP-via-HD", "🇺🇸 US-StaticIP-via-TT"]
       },
       {
-        "name": "YOUTUBE",
+        "name": "三网优化",
         "type": "select",
-        "proxies": ["Proxy", "🇺🇸 US-StaticIP-via-HD", "DIRECT"]
+        "proxies": ["🇺🇸 US-HD-198.51.100.20"]
+      },
+      {
+        "name": "普通代理",
+        "type": "select",
+        "proxies": ["🇸🇬 SP-TT-203.0.113.10", "CF官方优选*"]
+      },
+      {
+        "name": "Google",
+        "type": "select",
+        "proxies": ["三网优化", "普通代理", "静态住宅", "DIRECT"]
+      },
+      {
+        "name": "Proxy",
+        "type": "select",
+        "proxies": ["普通代理", "三网优化", "静态住宅", "DIRECT"]
       }
     ]
   },
@@ -56,34 +72,24 @@
       }
     ],
     "rules": [
-      "DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,twitter,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,twimg,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-SUFFIX,t.co,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,anthropic,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,claude,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,claudemcpcontent,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,chatgpt,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,datadoghq,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,adspower,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,browserleaks,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,apple,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,icloud,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-KEYWORD,auth0,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-SUFFIX,gemini.gstatic.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-SUFFIX,argotunnel.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-SUFFIX,cloudflare.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
-      "DOMAIN-SUFFIX,cloudflarebridge.com,🇺🇸 US-StaticIP-via-HD,no-resolve"
+      "DOMAIN-SUFFIX,x.com,静态住宅,no-resolve",
+      "DOMAIN-KEYWORD,twitter,静态住宅,no-resolve"
+    ],
+    "groups": [
+      { "name": "静态住宅", "type": "select", "proxies": ["🇺🇸 US-StaticIP-via-HD", "🇺🇸 US-StaticIP-via-TT"] },
+      { "name": "三网优化", "type": "select", "proxies": ["🇺🇸 US-HD-198.51.100.20"] },
+      { "name": "普通代理", "type": "select", "proxies": ["🇸🇬 SP-TT-203.0.113.10", "CF官方优选*"] },
+      { "name": "Google", "type": "select", "proxies": ["三网优化", "普通代理", "静态住宅", "DIRECT"] },
+      { "name": "Proxy", "type": "select", "proxies": ["普通代理", "三网优化", "静态住宅", "DIRECT"] }
     ],
     "addProxiesToGroups": true,
     "groupDefaults": {
-      "电报信息": ["🇺🇸 US-StaticIP-via-HD"],
-      "OpenAi": ["🇺🇸 US-StaticIP-via-HD"],
-      "OpenAI": ["🇺🇸 US-StaticIP-via-HD"],
-      "微软服务": ["🇺🇸 US-StaticIP-via-HD"],
-      "香港节点": ["🇺🇸 US-HD-198.51.100.20"],
-      "美国节点": ["🇺🇸 US-HD-198.51.100.20"]
+      "电报信息": ["Proxy"],
+      "OpenAi": ["静态住宅"],
+      "OpenAI": ["静态住宅"],
+      "微软服务": ["Proxy"],
+      "香港节点": ["普通代理"],
+      "美国节点": ["三网优化"]
     },
     "emoji": {
       "servers": {

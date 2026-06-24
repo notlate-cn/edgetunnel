@@ -4375,6 +4375,31 @@ function 渲染Clash代理引用列表(代理名称列表) {
 	return 代理名称列表.map(名称 => ['DIRECT', 'REJECT', 'REJECT-DROP', 'GLOBAL'].includes(名称) ? 名称 : YAML引用字符串(名称)).join(', ');
 }
 
+function 去掉开头国旗Emoji(名称 = '') {
+	return String(名称 || '').replace(/^(?:[\u{1F1E6}-\u{1F1FF}]{2}\s*)+/u, '');
+}
+
+function 代理名称匹配模式(名称, 模式) {
+	const 文本 = String(名称 || '');
+	const pattern = String(模式 || '');
+	if (!pattern.endsWith('*')) return 文本 === pattern;
+	const prefix = pattern.slice(0, -1);
+	return 文本.startsWith(prefix) || 去掉开头国旗Emoji(文本).startsWith(prefix);
+}
+
+function 解析实际代理名称(名称, 可选代理名称列表 = []) {
+	return 可选代理名称列表.find(候选 => 候选 === 名称 || 去掉开头国旗Emoji(候选) === 名称) || 名称;
+}
+
+function 展开代理名称列表(代理名称列表 = [], 可选代理名称列表 = []) {
+	const result = [];
+	for (const 名称 of 代理名称列表.map(item => String(item || '').trim()).filter(Boolean)) {
+		const 展开列表 = 名称.endsWith('*') ? 可选代理名称列表.filter(候选 => 代理名称匹配模式(候选, 名称)) : [解析实际代理名称(名称, 可选代理名称列表)];
+		for (const 展开名称 of 展开列表) if (展开名称 && !result.includes(展开名称)) result.push(展开名称);
+	}
+	return result;
+}
+
 function 合并Clash分组代理(已有名称列表, 待添加名称列表 = [], 优先名称列表 = []) {
 	const result = 已有名称列表.filter(Boolean);
 	for (const 名称 of 待添加名称列表) if (名称 && !result.includes(名称)) result.push(名称);
@@ -4478,6 +4503,64 @@ function 添加个人Clash代理到分组(clash_yaml, clashConfig = {}) {
 		分组结束 += 新块.length - 原块长度;
 		i = 分组开始 + 新块.length;
 	}
+	return 行列表.join('\n');
+}
+
+function 收集Clash全部代理名称(行列表) {
+	const 代理段落 = 查找YAML顶级段落(行列表, ['proxies']);
+	if (!代理段落) return [];
+	return Array.from(收集Clash代理名称(行列表, 代理段落.开始 + 1, 代理段落.结束));
+}
+
+function 渲染个人Clash分组(group, 可选代理名称列表 = []) {
+	if (!group || typeof group !== 'object' || !group.name || !Array.isArray(group.proxies)) return '';
+	const type = group.type || 'select';
+	const proxies = 展开代理名称列表(group.proxies, 可选代理名称列表);
+	if (proxies.length === 0) return '';
+	return `  - {name: ${YAML引用字符串(group.name)}, type: ${type}, proxies: [${渲染Clash代理引用列表(proxies)}]}`;
+}
+
+function 移除已有个人Clash分组(行列表, 分组段落, 分组名集合) {
+	let 分组结束 = 分组段落.结束;
+	for (let i = 分组结束 - 1; i > 分组段落.开始; i--) {
+		if (!/^\s*-\s*/.test(行列表[i])) continue;
+		const 分组开始 = i;
+		const 基础缩进 = 行列表[i].search(/\S/);
+		let 块结束 = i + 1;
+		for (let j = i + 1; j < 分组结束; j++) {
+			const 去空白 = 行列表[j].trim();
+			if (!去空白) {
+				块结束 = j + 1;
+				continue;
+			}
+			const 缩进 = 行列表[j].search(/\S/);
+			if (缩进 <= 基础缩进 && /^\s*-\s*/.test(行列表[j])) break;
+			块结束 = j + 1;
+		}
+		const 分组名 = 提取YAML字段值(行列表.slice(分组开始, 块结束).join('\n'), 'name');
+		if (!分组名集合.has(分组名)) continue;
+		行列表.splice(分组开始, 块结束 - 分组开始);
+		分组结束 -= 块结束 - 分组开始;
+	}
+}
+
+function 添加个人Clash分组(clash_yaml, clashConfig = {}) {
+	const groups = Array.isArray(clashConfig.groups) ? clashConfig.groups : [];
+	if (groups.length === 0) return clash_yaml;
+	const 行列表 = clash_yaml.split('\n');
+	const 可选代理名称列表 = 收集Clash全部代理名称(行列表);
+	const 待插入分组 = groups.map(group => 渲染个人Clash分组(group, 可选代理名称列表)).filter(Boolean);
+	if (待插入分组.length === 0) return clash_yaml;
+	let 分组段落 = 查找YAML顶级段落(行列表, ['proxy-groups', 'proxy_groups']);
+	if (!分组段落) {
+		const 代理段落 = 查找YAML顶级段落(行列表, ['proxies']);
+		const 插入位置 = 代理段落 ? 代理段落.结束 : 0;
+		行列表.splice(插入位置, 0, 'proxy-groups:', ...待插入分组);
+		return 行列表.join('\n');
+	}
+	移除已有个人Clash分组(行列表, 分组段落, new Set(groups.map(group => String(group?.name || '')).filter(Boolean)));
+	分组段落 = 查找YAML顶级段落(行列表, ['proxy-groups', 'proxy_groups']);
+	行列表.splice(分组段落.开始 + 1, 0, ...待插入分组);
 	return 行列表.join('\n');
 }
 
@@ -4599,6 +4682,7 @@ function 应用个人Clash配置(clash_yaml, 配置 = {}) {
 	patched = 添加个人Clash代理到分组(patched, clashConfig);
 	patched = 添加个人Clash规则(patched, clashConfig);
 	patched = 补齐Clash代理国旗(patched, clashConfig);
+	patched = 添加个人Clash分组(patched, clashConfig);
 	return patched;
 }
 
@@ -4613,7 +4697,7 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 	const proxyNames = allProxies.map(line => line.split('=')[0].trim()).filter(Boolean);
 	const ruleSets = (Array.isArray(shadowrocketConfig.ruleSets) ? shadowrocketConfig.ruleSets : []).map(转换Shadowrocket规则集).filter(Boolean);
 	const rules = (Array.isArray(shadowrocketConfig.rules) ? shadowrocketConfig.rules : []).map(rule => String(rule || '').trim()).filter(Boolean).map(转换Shadowrocket规则);
-	const groups = (Array.isArray(shadowrocketConfig.groups) ? shadowrocketConfig.groups : []).map(转换Shadowrocket代理分组).filter(Boolean);
+	const groups = (Array.isArray(shadowrocketConfig.groups) ? shadowrocketConfig.groups : []).map(group => 转换Shadowrocket代理分组(group, proxyNames)).filter(Boolean);
 	return [
 		'[General]',
 		'loglevel = notify',
@@ -4641,11 +4725,11 @@ function 转换Shadowrocket规则集(item) {
 	return `RULE-SET,${item.url},${item.policy}${item.noResolve ? ',no-resolve' : ''}`;
 }
 
-function 转换Shadowrocket代理分组(item) {
+function 转换Shadowrocket代理分组(item, 可选代理名称列表 = []) {
 	if (typeof item === 'string') return item.trim();
 	if (!item || typeof item !== 'object' || !item.name || !Array.isArray(item.proxies)) return '';
 	const type = item.type || 'select';
-	const proxies = item.proxies.map(proxy => String(proxy || '').trim()).filter(Boolean);
+	const proxies = 展开代理名称列表(item.proxies, 可选代理名称列表);
 	if (proxies.length === 0) return '';
 	return `${item.name} = ${type},${proxies.join(',')}`;
 }
