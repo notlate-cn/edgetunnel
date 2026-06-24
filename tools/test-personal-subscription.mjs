@@ -184,6 +184,39 @@ test('builds Shadowrocket subscription from personal links', () => {
 	assert.equal(生成个人Shadowrocket订阅({ enabled: true }), '');
 });
 
+test('uses custom Shadowrocket Proxy group instead of duplicating the default group', () => {
+	const { 生成个人Shadowrocket订阅 } = loadWorkerExports();
+	const output = 生成个人Shadowrocket订阅({
+		enabled: true,
+		shadowrocket: {
+			proxies: [
+				'Static=socks5,192.0.2.30,22324,user,pass',
+				'Fast=vless,example.com,443,password=uuid,tls=true',
+			],
+			groups: [
+				{
+					name: 'Proxy',
+					type: 'select',
+					proxies: ['普通代理', '静态住宅', 'DIRECT'],
+				},
+				{
+					name: '普通代理',
+					type: 'select',
+					proxies: ['Fast'],
+				},
+				{
+					name: '静态住宅',
+					type: 'select',
+					proxies: ['Static'],
+				},
+			],
+		},
+	});
+
+	assert.equal((output.match(/^Proxy = select,/gm) || []).length, 1);
+	assert.match(output, /\[Proxy Group\]\nProxy = select,普通代理,静态住宅,DIRECT\n普通代理 = select,Fast\n静态住宅 = select,Static/m);
+});
+
 test('builds Shadowrocket CF preferred proxies without mixed subscription links', () => {
 	const { 生成ShadowrocketCF优选代理列表 } = loadWorkerExports();
 	const proxies = 生成ShadowrocketCF优选代理列表(

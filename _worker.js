@@ -4697,7 +4697,9 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 	const proxyNames = allProxies.map(line => line.split('=')[0].trim()).filter(Boolean);
 	const ruleSets = (Array.isArray(shadowrocketConfig.ruleSets) ? shadowrocketConfig.ruleSets : []).map(转换Shadowrocket规则集).filter(Boolean);
 	const rules = (Array.isArray(shadowrocketConfig.rules) ? shadowrocketConfig.rules : []).map(rule => String(rule || '').trim()).filter(Boolean).map(转换Shadowrocket规则);
-	const groups = (Array.isArray(shadowrocketConfig.groups) ? shadowrocketConfig.groups : []).map(group => 转换Shadowrocket代理分组(group, proxyNames)).filter(Boolean);
+	const 原始分组 = Array.isArray(shadowrocketConfig.groups) ? shadowrocketConfig.groups : [];
+	const groups = 原始分组.map(group => 转换Shadowrocket代理分组(group, proxyNames)).filter(Boolean);
+	const 默认分组 = 包含Shadowrocket代理分组(原始分组, 'Proxy') ? [] : [`Proxy = select,${proxyNames.join(',')}`];
 	return [
 		'[General]',
 		'loglevel = notify',
@@ -4708,7 +4710,7 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 		...allProxies,
 		'',
 		'[Proxy Group]',
-		`Proxy = select,${proxyNames.join(',')}`,
+		...默认分组,
 		...groups,
 		'',
 		'[Rule]',
@@ -4717,6 +4719,17 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 		'FINAL,Proxy',
 		'',
 	].join('\n');
+}
+
+function 包含Shadowrocket代理分组(groups = [], name = '') {
+	return groups.some(group => {
+		if (typeof group === 'string') return new RegExp(`^\\s*${转义正则表达式(name)}\\s*=`).test(group);
+		return group && typeof group === 'object' && String(group.name || '').trim() === name;
+	});
+}
+
+function 转义正则表达式(text = '') {
+	return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function 转换Shadowrocket规则集(item) {
