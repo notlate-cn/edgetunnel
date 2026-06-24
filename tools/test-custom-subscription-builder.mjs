@@ -198,6 +198,17 @@ test('allows overriding Shadowrocket Johnshall policy routing', () => {
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,🇺🇸 US-StaticIP-via-HD'));
 });
 
+test('passes Shadowrocket CF preferred toggle into generated KV config', () => {
+	const output = buildCustomSubscription({
+		...SIMPLE_CONFIG,
+		shadowrocket: {
+			includeCfPreferred: false,
+		},
+	});
+
+	assert.equal(output.shadowrocket.includeCfPreferred, false);
+});
+
 test('can still inline custom Shadowrocket rules when requested', () => {
 	const output = buildCustomSubscription({
 		...SIMPLE_CONFIG,

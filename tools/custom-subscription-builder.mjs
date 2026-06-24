@@ -971,6 +971,7 @@ export function buildCustomSubscription(config, options = {}) {
 		enabled: config.enabled !== false,
 		appendServerToName: config.appendServerToName === true,
 		shadowrocket: {
+			includeCfPreferred: config.shadowrocket?.includeCfPreferred !== false,
 			links: shadowrocketLinks,
 			proxies: shadowrocketProxies,
 			rules: shadowrocketRules,

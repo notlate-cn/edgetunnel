@@ -2,6 +2,7 @@
   "enabled": true,
   "appendServerToName": true,
   "shadowrocket": {
+    "includeCfPreferred": true,
     "links": [
       "vless://YOUR-TT-UUID@203.0.113.10:443?encryption=none&security=reality&type=tcp&flow=xtls-rprx-vision&sni=www.microsoft.com&fp=chrome&pbk=YOUR-TT-REALITY-PUBLIC-KEY&sid=abcd#%F0%9F%87%B8%F0%9F%87%AC%20SP-TT-203.0.113.10",
       "vless://YOUR-HD-UUID@198.51.100.20:443?encryption=none&security=reality&type=tcp&flow=xtls-rprx-vision&sni=addons.mozilla.org&fp=firefox&pbk=YOUR-HD-REALITY-PUBLIC-KEY&sid=#%F0%9F%87%BA%F0%9F%87%B8%20US-HD-198.51.100.20",

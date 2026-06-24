@@ -354,7 +354,7 @@ export default {
 						if (!ua.includes('mozilla')) responseHeaders["Content-Disposition"] = `attachment; filename*=utf-8''${encodeURIComponent(config_JSON.优选订阅生成.SUBNAME)}`;
 						const 协议类型 = ((url.searchParams.has('surge') || ua.includes('surge')) && config_JSON.协议类型 !== 'ss') ? 'tro' + 'jan' : config_JSON.协议类型;
 						let 订阅内容 = '';
-						const 需要ShadowrocketCF优选 = 订阅类型 === 'shadowrocket' || 订阅类型 === 'shadowrocket-links';
+						const 需要ShadowrocketCF优选 = 个人Shadowrocket包含CF优选(个人订阅配置) && (订阅类型 === 'shadowrocket' || 订阅类型 === 'shadowrocket-links');
 						const ShadowrocketCF优选列表 = 需要ShadowrocketCF优选 ? await 读取缓存CF优选列表(request, env, config_JSON) : [];
 						const ShadowrocketCF优选代理列表 = 订阅类型 === 'shadowrocket'
 							? 生成ShadowrocketCF优选代理列表(ShadowrocketCF优选列表, config_JSON, 个人订阅配置)
@@ -4206,6 +4206,7 @@ const 个人订阅默认配置 = {
 	enabled: false,
 	appendServerToName: false,
 	shadowrocket: {
+		includeCfPreferred: true,
 		links: [],
 		proxies: [],
 		rules: [],
@@ -4264,6 +4265,11 @@ function 解析个人订阅配置文本(文本) {
 
 function 规范化个人订阅配置(配置 = {}) {
 	return 深合并配置(个人订阅默认配置, 配置);
+}
+
+function 个人Shadowrocket包含CF优选(配置 = {}) {
+	const 个人配置 = 规范化个人订阅配置(配置);
+	return 个人配置.shadowrocket?.includeCfPreferred !== false;
 }
 
 async function 读取个人订阅配置(env = {}) {

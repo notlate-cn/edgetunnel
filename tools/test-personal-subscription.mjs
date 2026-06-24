@@ -15,6 +15,7 @@ globalThis.__testExports = {
 	生成ClashCF优选代理列表,
 	生成个人Shadowrocket订阅,
 	生成个人Shadowrocket节点订阅,
+	个人Shadowrocket包含CF优选,
 	读取缓存CF优选列表,
 	读取个人订阅配置,
 	获取订阅转换目标,
@@ -359,6 +360,14 @@ test('builds Shadowrocket CF preferred links for node subscriptions', () => {
 	assert.match(links[0], /host=worker\.example\.com/);
 	assert.match(links[0], /path=%2Fedge%3Fed%3D2560/);
 	assert.match(links[0], /#CF%E5%AE%98%E6%96%B9%E4%BC%98%E9%80%891-203\.0\.113\.100$/);
+});
+
+test('can disable Shadowrocket CF preferred additions from personal config', () => {
+	const { 个人Shadowrocket包含CF优选 } = loadWorkerExports();
+
+	assert.equal(个人Shadowrocket包含CF优选({}), true);
+	assert.equal(个人Shadowrocket包含CF优选({ enabled: true, shadowrocket: {} }), true);
+	assert.equal(个人Shadowrocket包含CF优选({ enabled: true, shadowrocket: { includeCfPreferred: false } }), false);
 });
 
 test('caches generated CF preferred list for repeated personal subscriptions', async () => {
