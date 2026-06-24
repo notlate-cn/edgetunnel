@@ -350,6 +350,7 @@ export default {
 						const 协议类型 = ((url.searchParams.has('surge') || ua.includes('surge')) && config_JSON.协议类型 !== 'ss') ? 'tro' + 'jan' : config_JSON.协议类型;
 						let 订阅内容 = '';
 						const 个人Shadowrocket订阅内容 = 订阅类型 === 'shadowrocket' ? 生成个人Shadowrocket订阅(个人订阅配置) : '';
+						const 使用个人Shadowrocket配置 = Boolean(个人Shadowrocket订阅内容 && /^\[General\]/.test(个人Shadowrocket订阅内容));
 						if (个人Shadowrocket订阅内容) {
 							订阅内容 = 个人Shadowrocket订阅内容;
 						} else if (订阅类型使用本地Mixed生成(订阅类型)) {
@@ -488,7 +489,7 @@ export default {
 								});
 						}
 
-						if ((订阅类型 === 'shadowrocket') || (订阅类型 === 'mixed' && (!ua.includes('mozilla') || url.searchParams.has('b64') || url.searchParams.has('base64')))) 订阅内容 = btoa(订阅内容);
+						if ((订阅类型 === 'shadowrocket' && !使用个人Shadowrocket配置) || (订阅类型 === 'mixed' && (!ua.includes('mozilla') || url.searchParams.has('b64') || url.searchParams.has('base64')))) 订阅内容 = btoa(订阅内容);
 
 						if (订阅类型 === 'singbox') {
 							订阅内容 = await Singbox订阅配置文件热补丁(订阅内容, config_JSON);
@@ -4182,6 +4183,8 @@ const 个人订阅默认配置 = {
 	appendServerToName: false,
 	shadowrocket: {
 		links: [],
+		proxies: [],
+		rules: [],
 	},
 	clash: {
 		dns: '',
@@ -4598,8 +4601,35 @@ function 应用个人Clash配置(clash_yaml, 配置 = {}) {
 function 生成个人Shadowrocket订阅(配置 = {}) {
 	const 个人配置 = 规范化个人订阅配置(配置);
 	if (!个人配置.enabled) return '';
-	const links = Array.isArray(个人配置.shadowrocket?.links) ? 个人配置.shadowrocket.links : [];
-	return links.map(link => String(link || '').trim()).filter(Boolean).join('\n');
+	const shadowrocketConfig = 个人配置.shadowrocket || {};
+	const proxies = Array.isArray(shadowrocketConfig.proxies) ? shadowrocketConfig.proxies.map(line => String(line || '').trim()).filter(Boolean) : [];
+	const links = Array.isArray(shadowrocketConfig.links) ? shadowrocketConfig.links.map(link => String(link || '').trim()).filter(Boolean) : [];
+	if (proxies.length === 0) return links.join('\n');
+	const proxyNames = proxies.map(line => line.split('=')[0].trim()).filter(Boolean);
+	const rules = (Array.isArray(shadowrocketConfig.rules) ? shadowrocketConfig.rules : []).map(rule => String(rule || '').trim()).filter(Boolean).map(转换Shadowrocket规则);
+	return [
+		'[General]',
+		'loglevel = notify',
+		'dns-server = system,https://sm2.doh.pub/dns-query,https://dns.alidns.com/dns-query',
+		'skip-proxy = localhost,*.local,*.lan',
+		'',
+		'[Proxy]',
+		...proxies,
+		'',
+		'[Proxy Group]',
+		`Proxy = select,${proxyNames.join(',')}`,
+		'',
+		'[Rule]',
+		...rules,
+		'FINAL,Proxy',
+		'',
+	].join('\n');
+}
+
+function 转换Shadowrocket规则(rule) {
+	const parts = String(rule || '').split(',').map(part => part.trim()).filter(part => part !== '');
+	if (parts[0] === 'MATCH' && parts[1]) return `FINAL,${parts[1]}`;
+	return parts.join(',');
 }
 
 function Clash订阅配置文件热补丁(Clash_原始订阅内容, config_JSON = {}) {

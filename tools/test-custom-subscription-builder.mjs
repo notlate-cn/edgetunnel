@@ -100,6 +100,11 @@ test('builds full KV config from compact node ids', () => {
 	assert.match(output.shadowrocket.links[0], /pbk=YOUR-TT-PUBLIC-KEY/);
 	assert.match(output.shadowrocket.links[1], /fp=firefox/);
 	assert.match(output.shadowrocket.links[2], /^socks5:\/\/SOCKS-USER:SOCKS-PASS@192\.0\.2\.30:22324#/);
+	assert.equal(output.shadowrocket.proxies.length, 3);
+	assert.match(output.shadowrocket.proxies[0], /^🇸🇬 SP-TT-203\.0\.113\.10=vless,203\.0\.113\.10,443,password=YOUR-TT-UUID,tls=true/);
+	assert.match(output.shadowrocket.proxies[0], /pbk=YOUR-TT-PUBLIC-KEY/);
+	assert.match(output.shadowrocket.proxies[2], /^🇺🇸 US-StaticIP-via-HD=socks5,192\.0\.2\.30,22324,SOCKS-USER,SOCKS-PASS/);
+	assert.deepEqual(output.shadowrocket.rules, output.clash.rules);
 
 	assert.deepEqual(output.clash.rules, [
 		'DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve',

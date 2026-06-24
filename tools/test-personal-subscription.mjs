@@ -136,13 +136,20 @@ test('builds Shadowrocket subscription from personal links', () => {
 				'vless://uuid@example.com:443?security=reality#Example',
 				'socks5://user:pass@192.0.2.30:22324#Static',
 			],
+			proxies: [
+				'Example=vless,example.com,443,password=uuid,tls=true',
+				'Static=socks5,192.0.2.30,22324,user,pass',
+			],
+			rules: [
+				'DOMAIN-KEYWORD,openai,Static,no-resolve',
+			],
 		},
 	});
 
-	assert.equal(output, [
-		'vless://uuid@example.com:443?security=reality#Example',
-		'socks5://user:pass@192.0.2.30:22324#Static',
-	].join('\n'));
+	assert.match(output, /^\[General\]\n/m);
+	assert.match(output, /\[Proxy\]\nExample=vless,example\.com,443,password=uuid,tls=true\nStatic=socks5,192\.0\.2\.30,22324,user,pass/m);
+	assert.match(output, /\[Proxy Group\]\nProxy = select,Example,Static/m);
+	assert.match(output, /\[Rule\]\nDOMAIN-KEYWORD,openai,Static,no-resolve\nFINAL,Proxy/m);
 	assert.equal(生成个人Shadowrocket订阅({ enabled: false, shadowrocket: { links: ['vless://unused'] } }), '');
 	assert.equal(生成个人Shadowrocket订阅({ enabled: true }), '');
 });

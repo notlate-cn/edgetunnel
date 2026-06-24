@@ -7,6 +7,16 @@
       "vless://YOUR-HD-UUID@198.51.100.20:443?encryption=none&security=reality&type=tcp&flow=xtls-rprx-vision&sni=addons.mozilla.org&fp=firefox&pbk=YOUR-HD-REALITY-PUBLIC-KEY&sid=#%F0%9F%87%BA%F0%9F%87%B8%20US-HD-198.51.100.20",
       "socks5://YOUR-SOCKS-USERNAME:YOUR-SOCKS-PASSWORD@192.0.2.30:22324#%F0%9F%87%BA%F0%9F%87%B8%20US-StaticIP-via-HD",
       "socks5://YOUR-SOCKS-USERNAME:YOUR-SOCKS-PASSWORD@192.0.2.30:22324#%F0%9F%87%BA%F0%9F%87%B8%20US-StaticIP-via-TT"
+    ],
+    "proxies": [
+      "🇸🇬 SP-TT-203.0.113.10=vless,203.0.113.10,443,password=YOUR-TT-UUID,tls=true,type=tcp,flow=xtls-rprx-vision,sni=www.microsoft.com,peer=www.microsoft.com,fp=chrome,pbk=YOUR-TT-REALITY-PUBLIC-KEY,sid=abcd",
+      "🇺🇸 US-HD-198.51.100.20=vless,198.51.100.20,443,password=YOUR-HD-UUID,tls=true,type=tcp,flow=xtls-rprx-vision,sni=addons.mozilla.org,peer=addons.mozilla.org,fp=firefox,pbk=YOUR-HD-REALITY-PUBLIC-KEY,sid=",
+      "🇺🇸 US-StaticIP-via-HD=socks5,192.0.2.30,22324,YOUR-SOCKS-USERNAME,YOUR-SOCKS-PASSWORD",
+      "🇺🇸 US-StaticIP-via-TT=socks5,192.0.2.30,22324,YOUR-SOCKS-USERNAME,YOUR-SOCKS-PASSWORD"
+    ],
+    "rules": [
+      "DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
+      "DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve"
     ]
   },
   "clash": {

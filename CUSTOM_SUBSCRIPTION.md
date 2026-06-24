@@ -106,11 +106,11 @@ npx wrangler deploy --config wrangler.local.toml
 
 ## Subscription URLs
 
-Use Clash YAML output for both clients:
+Use separate outputs for ClashMac and Shadowrocket:
 
 ```text
 https://<your-domain>/sub?token=<token>&clash
 https://<your-domain>/sub?token=<token>&shadowrocket
 ```
 
-The Shadowrocket URL is mapped to Clash YAML by this fork.
+The ClashMac URL returns Clash YAML. The Shadowrocket URL returns a lightweight Shadowrocket `.conf` profile with `[Proxy]`, `[Proxy Group]`, and `[Rule]` sections generated from `custom-subscription.private.json`.

@@ -523,6 +523,51 @@ function buildShadowrocketLink(node, proxyName, path) {
 	return null;
 }
 
+function buildVlessRealityShadowrocketProxy(node, proxyName, path) {
+	for (const key of ['server', 'uuid', 'servername', 'publicKey']) {
+		assertRequiredString(node[key], `${path}.${key}`);
+	}
+
+	return [
+		`${proxyName}=vless`,
+		node.server,
+		node.port ?? 443,
+		`password=${node.uuid}`,
+		`tls=${node.tls ?? true}`,
+		`type=${node.network ?? 'tcp'}`,
+		`flow=${node.flow ?? 'xtls-rprx-vision'}`,
+		`sni=${node.servername}`,
+		`peer=${node.servername}`,
+		`fp=${node.clientFingerprint ?? 'chrome'}`,
+		`pbk=${node.publicKey}`,
+		`sid=${node.shortId ?? ''}`,
+	].join(',');
+}
+
+function buildSocks5ShadowrocketProxy(node, proxyName, path) {
+	for (const key of ['server', 'port', 'username', 'password']) {
+		if (key === 'port' && typeof node[key] === 'number') continue;
+		assertRequiredString(node[key], `${path}.${key}`);
+	}
+
+	return `${proxyName}=socks5,${node.server},${node.port},${node.username},${node.password}`;
+}
+
+function buildShadowrocketProxy(node, proxyName, path) {
+	if (node.shadowrocket === false || node.shadowrocket?.enabled === false) return null;
+	if (node.shadowrocketProxy) {
+		assertRequiredString(node.shadowrocketProxy, `${path}.shadowrocketProxy`);
+		return node.shadowrocketProxy;
+	}
+	if (node.shadowrocket?.proxy) {
+		assertRequiredString(node.shadowrocket.proxy, `${path}.shadowrocket.proxy`);
+		return node.shadowrocket.proxy;
+	}
+	if (node.type === 'vless-reality') return buildVlessRealityShadowrocketProxy(node, proxyName, path);
+	if (node.type === 'socks5' || node.type === 'socks5-chain') return buildSocks5ShadowrocketProxy(node, proxyName, path);
+	return null;
+}
+
 function buildRules(configRules, idToName) {
 	const rules = configRules || {};
 	if (!rules || typeof rules !== 'object' || Array.isArray(rules)) throw new Error('rules must be an object');
@@ -613,17 +658,23 @@ export function buildCustomSubscription(config) {
 	const shadowrocketLinks = Object.entries(nodes)
 		.map(([nodeId, node]) => buildShadowrocketLink(node, idToName.get(nodeId), `nodes.${nodeId}`))
 		.filter(Boolean);
+	const shadowrocketProxies = Object.entries(nodes)
+		.map(([nodeId, node]) => buildShadowrocketProxy(node, idToName.get(nodeId), `nodes.${nodeId}`))
+		.filter(Boolean);
+	const rules = buildRules(config.rules, idToName);
 
 	return {
 		enabled: config.enabled !== false,
 		appendServerToName: config.appendServerToName === true,
 		shadowrocket: {
 			links: shadowrocketLinks,
+			proxies: shadowrocketProxies,
+			rules,
 		},
 		clash: {
 			dns: resolveDnsBlock(config),
 			proxies,
-			rules: buildRules(config.rules, idToName),
+			rules,
 			addProxiesToGroups: config.addProxiesToGroups !== false,
 			groupDefaults: buildGroupDefaults(config.groupDefaults, idToName),
 			emoji: buildEmoji(config, nodes),
