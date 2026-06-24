@@ -110,10 +110,11 @@ Use separate outputs for ClashMac and Shadowrocket:
 
 ```text
 https://<your-domain>/sub?token=<token>&clash
-https://<your-domain>/sub?token=<token>&shadowrocket
+https://<your-domain>/sub?token=<token>&shadowrocket-conf
+https://<your-domain>/sub?token=<token>&shadowrocket-links
 ```
 
-The ClashMac URL returns Clash YAML. The Shadowrocket URL returns a Shadowrocket `.conf` profile with `[Proxy]`, `[Proxy Group]`, and `[Rule]` sections generated from `custom-subscription.private.json`, plus local CF preferred nodes generated directly by the Worker instead of the mixed subscription path.
+The ClashMac URL returns Clash YAML. `shadowrocket-conf` returns a Shadowrocket `.conf` profile with `[Proxy]`, `[Proxy Group]`, and `[Rule]` sections generated from `custom-subscription.private.json`, plus local CF preferred nodes generated directly by the Worker instead of the mixed subscription path. Add this URL from Shadowrocket's configuration download/import screen, not from the ordinary server `Subscribe` form. `shadowrocket-links` returns a plain node subscription for the ordinary `Subscribe` form, without rules.
 
 Shadowrocket rule order is:
 

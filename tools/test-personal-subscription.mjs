@@ -11,8 +11,10 @@ globalThis.__testExports = {
 	应用个人Clash配置,
 	生成个人Clash订阅,
 	生成ShadowrocketCF优选代理列表,
+	生成ShadowrocketCF优选链接列表,
 	生成ClashCF优选代理列表,
 	生成个人Shadowrocket订阅,
+	生成个人Shadowrocket节点订阅,
 	读取个人订阅配置,
 	获取订阅转换目标,
 	订阅类型使用本地Mixed生成,
@@ -237,6 +239,42 @@ test('builds Shadowrocket subscription from personal links', () => {
 	assert.equal(生成个人Shadowrocket订阅({ enabled: true }), '');
 });
 
+test('adds update-url to Shadowrocket config subscriptions', () => {
+	const { 生成个人Shadowrocket订阅 } = loadWorkerExports();
+	const output = 生成个人Shadowrocket订阅({
+		enabled: true,
+		shadowrocket: {
+			proxies: ['Example=vless,example.com,443,password=uuid,tls=true'],
+			rules: ['DOMAIN-KEYWORD,openai,Example,no-resolve'],
+		},
+	}, [], { updateUrl: 'https://worker.example.com/sub?token=TOKEN&shadowrocket-conf' });
+
+	assert.match(output, /^\[General\]\nloglevel = notify\nupdate-url = https:\/\/worker\.example\.com\/sub\?token=TOKEN&shadowrocket-conf\n/m);
+});
+
+test('builds Shadowrocket node subscription separately from config profile', () => {
+	const { 生成个人Shadowrocket节点订阅 } = loadWorkerExports();
+	const output = 生成个人Shadowrocket节点订阅({
+		enabled: true,
+		shadowrocket: {
+			links: [
+				'vless://uuid@example.com:443?security=reality#Example',
+				'socks5://user:pass@192.0.2.30:22324#Static',
+			],
+		},
+	}, [
+		'vless://cf-uuid@203.0.113.100:443?security=tls#CF',
+	]);
+
+	assert.equal(output, [
+		'vless://uuid@example.com:443?security=reality#Example',
+		'socks5://user:pass@192.0.2.30:22324#Static',
+		'vless://cf-uuid@203.0.113.100:443?security=tls#CF',
+	].join('\n'));
+	assert.equal(生成个人Shadowrocket节点订阅({ enabled: false, shadowrocket: { links: ['vless://unused'] } }), '');
+	assert.equal(生成个人Shadowrocket节点订阅({ enabled: true }), '');
+});
+
 test('uses custom Shadowrocket Proxy group instead of duplicating the default group', () => {
 	const { 生成个人Shadowrocket订阅 } = loadWorkerExports();
 	const output = 生成个人Shadowrocket订阅({
@@ -294,6 +332,32 @@ test('builds Shadowrocket CF preferred proxies without mixed subscription links'
 	assert.match(proxies[0], /peer=worker\.example\.com/);
 	assert.match(proxies[0], /obfs-path="\/edge\?ed=2560"/);
 	assert.match(proxies[1], /^CF官方优选2-198\.51\.100\.200=vless,198\.51\.100\.200,2053,password=cf-uuid,tls=true/);
+});
+
+test('builds Shadowrocket CF preferred links for node subscriptions', () => {
+	const { 生成ShadowrocketCF优选链接列表 } = loadWorkerExports();
+	const links = 生成ShadowrocketCF优选链接列表(
+		[
+			'203.0.113.100:443#CF官方优选1',
+			'sub://example.invalid#skip',
+		],
+		{
+			UUID: 'cf-uuid',
+			HOSTS: ['worker.example.com'],
+			Fingerprint: 'chrome',
+			完整节点路径: '/edge?ed=2560',
+			传输协议: 'ws',
+		},
+		{ enabled: true, appendServerToName: true },
+	);
+
+	assert.equal(links.length, 1);
+	assert.match(links[0], /^vless:\/\/cf-uuid@203\.0\.113\.100:443\?/);
+	assert.match(links[0], /security=tls/);
+	assert.match(links[0], /type=ws/);
+	assert.match(links[0], /host=worker\.example\.com/);
+	assert.match(links[0], /path=%2Fedge%3Fed%3D2560/);
+	assert.match(links[0], /#CF%E5%AE%98%E6%96%B9%E4%BC%98%E9%80%891-203\.0\.113\.100$/);
 });
 
 test('builds Clash CF preferred proxies without mixed subscription links', () => {

@@ -330,7 +330,11 @@ export default {
 						const isSubConverterRequest = url.searchParams.has('b64') || url.searchParams.has('base64') || request.headers.get('subconverter-request') || request.headers.get('subconverter-version') || ua.includes('subconverter') || ua.includes(('CF-Workers-SUB').toLowerCase()) || 作为优选订阅生成器;
 						const 订阅类型 = isSubConverterRequest
 							? 'mixed'
-							: url.searchParams.has('target')
+							: url.searchParams.has('shadowrocket-links') || url.searchParams.has('sr-links')
+								? 'shadowrocket-links'
+								: url.searchParams.has('shadowrocket-conf') || url.searchParams.has('sr-conf')
+									? 'shadowrocket'
+									: url.searchParams.has('target')
 								? url.searchParams.get('target')
 								: url.searchParams.has('clash') || ua.includes('clash') || ua.includes('meta') || ua.includes('mihomo')
 									? 'clash'
@@ -349,17 +353,26 @@ export default {
 						if (!ua.includes('mozilla')) responseHeaders["Content-Disposition"] = `attachment; filename*=utf-8''${encodeURIComponent(config_JSON.优选订阅生成.SUBNAME)}`;
 						const 协议类型 = ((url.searchParams.has('surge') || ua.includes('surge')) && config_JSON.协议类型 !== 'ss') ? 'tro' + 'jan' : config_JSON.协议类型;
 						let 订阅内容 = '';
+						const 需要ShadowrocketCF优选 = 订阅类型 === 'shadowrocket' || 订阅类型 === 'shadowrocket-links';
+						const ShadowrocketCF优选列表 = 需要ShadowrocketCF优选 ? await 读取本地CF优选列表(request, env, config_JSON) : [];
 						const ShadowrocketCF优选代理列表 = 订阅类型 === 'shadowrocket'
-							? 生成ShadowrocketCF优选代理列表(await 读取本地CF优选列表(request, env, config_JSON), config_JSON, 个人订阅配置)
+							? 生成ShadowrocketCF优选代理列表(ShadowrocketCF优选列表, config_JSON, 个人订阅配置)
+							: [];
+						const ShadowrocketCF优选链接列表 = 订阅类型 === 'shadowrocket-links'
+							? 生成ShadowrocketCF优选链接列表(ShadowrocketCF优选列表, config_JSON, 个人订阅配置)
 							: [];
 						const ClashCF优选代理列表 = 订阅类型 === 'clash'
 							? 生成ClashCF优选代理列表(await 读取本地CF优选列表(request, env, config_JSON), config_JSON, 个人订阅配置)
 							: [];
-						const 个人Shadowrocket订阅内容 = 订阅类型 === 'shadowrocket' ? 生成个人Shadowrocket订阅(个人订阅配置, ShadowrocketCF优选代理列表) : '';
+						const Shadowrocket配置订阅URL = `${url.protocol}//${url.host}/sub?token=${订阅TOKEN}&shadowrocket-conf`;
+						const 个人Shadowrocket订阅内容 = 订阅类型 === 'shadowrocket' ? 生成个人Shadowrocket订阅(个人订阅配置, ShadowrocketCF优选代理列表, { updateUrl: Shadowrocket配置订阅URL }) : '';
+						const 个人Shadowrocket节点订阅内容 = 订阅类型 === 'shadowrocket-links' ? 生成个人Shadowrocket节点订阅(个人订阅配置, ShadowrocketCF优选链接列表) : '';
 						const 个人Clash订阅内容 = 订阅类型 === 'clash' ? 生成个人Clash订阅(个人订阅配置, ClashCF优选代理列表) : '';
 						const 使用个人Shadowrocket配置 = Boolean(个人Shadowrocket订阅内容 && /^\[General\]/.test(个人Shadowrocket订阅内容));
 						const 使用个人Clash配置 = Boolean(个人Clash订阅内容 && /^proxies:\s*$|^dns:\s*$/m.test(个人Clash订阅内容));
-						if (个人Shadowrocket订阅内容) {
+						if (个人Shadowrocket节点订阅内容) {
+							订阅内容 = 个人Shadowrocket节点订阅内容;
+						} else if (个人Shadowrocket订阅内容) {
 							订阅内容 = 个人Shadowrocket订阅内容;
 						} else if (个人Clash订阅内容) {
 							订阅内容 = 个人Clash订阅内容;
@@ -4743,7 +4756,7 @@ function 生成个人Clash订阅(配置 = {}, 额外代理列表 = []) {
 	return output.join('\n');
 }
 
-function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
+function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = [], options = {}) {
 	const 个人配置 = 规范化个人订阅配置(配置);
 	if (!个人配置.enabled) return '';
 	const shadowrocketConfig = 个人配置.shadowrocket || {};
@@ -4751,6 +4764,7 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 	const links = Array.isArray(shadowrocketConfig.links) ? shadowrocketConfig.links.map(link => String(link || '').trim()).filter(Boolean) : [];
 	const allProxies = [...proxies, ...额外代理列表.map(line => String(line || '').trim()).filter(Boolean)];
 	if (allProxies.length === 0) return links.join('\n');
+	const updateUrl = String(options.updateUrl || shadowrocketConfig.updateUrl || '').trim();
 	const proxyNames = allProxies.map(line => line.split('=')[0].trim()).filter(Boolean);
 	const ruleSets = (Array.isArray(shadowrocketConfig.ruleSets) ? shadowrocketConfig.ruleSets : []).map(转换Shadowrocket规则集).filter(Boolean);
 	const rules = (Array.isArray(shadowrocketConfig.rules) ? shadowrocketConfig.rules : []).map(rule => String(rule || '').trim()).filter(Boolean).map(转换Shadowrocket规则);
@@ -4760,6 +4774,7 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 	return [
 		'[General]',
 		'loglevel = notify',
+		...(updateUrl ? [`update-url = ${updateUrl}`] : []),
 		'dns-server = system,https://sm2.doh.pub/dns-query,https://dns.alidns.com/dns-query',
 		'skip-proxy = localhost,*.local,*.lan',
 		'',
@@ -4776,6 +4791,19 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 		'FINAL,Proxy',
 		'',
 	].join('\n');
+}
+
+function 生成个人Shadowrocket节点订阅(配置 = {}, 额外链接列表 = []) {
+	const 个人配置 = 规范化个人订阅配置(配置);
+	if (!个人配置.enabled) return '';
+	const shadowrocketConfig = 个人配置.shadowrocket || {};
+	const links = [
+		...(Array.isArray(shadowrocketConfig.links) ? shadowrocketConfig.links : []),
+		...(Array.isArray(额外链接列表) ? 额外链接列表 : []),
+	].map(link => String(link || '').trim()).filter(Boolean);
+	const output = [];
+	for (const link of links) if (!output.includes(link)) output.push(link);
+	return output.join('\n');
 }
 
 function 包含Shadowrocket代理分组(groups = [], name = '') {
@@ -4827,6 +4855,32 @@ function 生成ShadowrocketCF优选代理列表(优选IP列表 = [], config_JSON
 			`obfs-header=${Shadowrocket引用值(`Host:${host}`)}`,
 			`fp=${Shadowrocket字段值(fingerprint)}`,
 		].join(',');
+	}).filter(Boolean);
+}
+
+function 生成ShadowrocketCF优选链接列表(优选IP列表 = [], config_JSON = {}, 个人订阅配置 = {}) {
+	const uuid = config_JSON.UUID || '';
+	if (!uuid) return [];
+	const host = (Array.isArray(config_JSON.HOSTS) && config_JSON.HOSTS.length > 0 ? config_JSON.HOSTS[0] : config_JSON.HOST || '').replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+	if (!host) return [];
+	const fingerprint = config_JSON.Fingerprint || 'chrome';
+	const 节点路径 = 获取传输路径参数值(config_JSON, config_JSON.完整节点路径 || '/', false);
+	const { type: 传输协议, 路径字段名, 域名字段名 } = 获取传输协议配置(config_JSON);
+	return 优选IP列表.map(原始地址 => {
+		const 节点 = 解析优选节点地址(原始地址);
+		if (!节点) return null;
+		const 节点备注 = 添加个人节点地址到备注(节点.备注, 节点.地址, 个人订阅配置);
+		const server = 节点.地址.replace(/^\[|\]$/g, '');
+		const params = [
+			['security', 'tls'],
+			['type', 传输协议],
+			[域名字段名, host],
+			['fp', fingerprint],
+			['sni', host],
+			[路径字段名, 节点路径],
+			['encryption', 'none'],
+		].map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`).join('&');
+		return `vless://${encodeURIComponent(uuid)}@${server}:${节点.端口}?${params}#${encodeURIComponent(节点备注)}`;
 	}).filter(Boolean);
 }
 

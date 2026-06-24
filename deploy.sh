@@ -50,5 +50,8 @@ echo
 echo "ClashMac:"
 echo "https://${WORKER_HOST}/sub?token=${token}&clash"
 echo
-echo "Shadowrocket:"
-echo "https://${WORKER_HOST}/sub?token=${token}&shadowrocket"
+echo "Shadowrocket config (rules):"
+echo "https://${WORKER_HOST}/sub?token=${token}&shadowrocket-conf"
+echo
+echo "Shadowrocket nodes (Subscribe):"
+echo "https://${WORKER_HOST}/sub?token=${token}&shadowrocket-links"

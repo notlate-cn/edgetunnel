@@ -442,7 +442,8 @@ test('deploy shell wrapper defaults to .env.local KV namespace and private confi
 		assert.match(deployResult.stdout, /from .*custom-subscription\.private\.json/);
 		assert.match(deployResult.stdout, /--namespace-id test-env-file-namespace --remote/);
 		assert.match(deployResult.stdout, /ClashMac:\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&clash/);
-		assert.match(deployResult.stdout, /Shadowrocket:\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&shadowrocket/);
+		assert.match(deployResult.stdout, /Shadowrocket config \(rules\):\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&shadowrocket-conf/);
+		assert.match(deployResult.stdout, /Shadowrocket nodes \(Subscribe\):\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&shadowrocket-links/);
 	} finally {
 		rmSync(tempDir, { recursive: true, force: true });
 	}
