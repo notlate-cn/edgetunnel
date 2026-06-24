@@ -4747,6 +4747,13 @@ function 转换Shadowrocket代理分组(item, 可选代理名称列表 = []) {
 	return `${item.name} = ${type},${proxies.join(',')}`;
 }
 
+function 补齐CF优选备注国旗(备注 = '') {
+	const 文本 = String(备注 || '').trim();
+	if (!文本 || 含国旗Emoji(文本)) return 文本;
+	if (/CF官方优选/i.test(文本)) return `🇺🇸 ${文本}`;
+	return 文本;
+}
+
 function 生成ShadowrocketCF优选代理列表(优选IP列表 = [], config_JSON = {}, 个人订阅配置 = {}) {
 	const uuid = config_JSON.UUID || '';
 	if (!uuid) return [];
@@ -4757,7 +4764,7 @@ function 生成ShadowrocketCF优选代理列表(优选IP列表 = [], config_JSON
 	return 优选IP列表.map(原始地址 => {
 		const 节点 = 解析优选节点地址(原始地址);
 		if (!节点) return null;
-		const 节点备注 = 添加个人节点地址到备注(节点.备注, 节点.地址, 个人订阅配置);
+		const 节点备注 = 补齐CF优选备注国旗(添加个人节点地址到备注(节点.备注, 节点.地址, 个人订阅配置));
 		return [
 			`${Shadowrocket字段值(节点备注)}=vless`,
 			节点.地址.replace(/^\[|\]$/g, ''),

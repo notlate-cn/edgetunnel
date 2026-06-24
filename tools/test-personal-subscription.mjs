@@ -173,12 +173,12 @@ test('builds Shadowrocket subscription from personal links', () => {
 				},
 			],
 		},
-	}, ['CF官方优选1=vless,203.0.113.100,443,password=cf-uuid,tls=true']);
+	}, ['🇺🇸 CF官方优选1=vless,203.0.113.100,443,password=cf-uuid,tls=true']);
 
 	assert.match(output, /^\[General\]\n/m);
 	assert.match(output, /\[Proxy\]\nExample=vless,example\.com,443,password=uuid,tls=true\nStatic=socks5,192\.0\.2\.30,22324,user,pass/m);
-	assert.match(output, /CF官方优选1=vless,203\.0\.113\.100,443,password=cf-uuid,tls=true/);
-	assert.match(output, /\[Proxy Group\]\nProxy = select,Example,Static,CF官方优选1\nAI = select,Static,Proxy,DIRECT\n普通代理 = select,Example,CF官方优选1/m);
+	assert.match(output, /🇺🇸 CF官方优选1=vless,203\.0\.113\.100,443,password=cf-uuid,tls=true/);
+	assert.match(output, /\[Proxy Group\]\nProxy = select,Example,Static,🇺🇸 CF官方优选1\nAI = select,Static,Proxy,DIRECT\n普通代理 = select,Example,🇺🇸 CF官方优选1/m);
 	assert.match(output, /\[Rule\]\nRULE-SET,https:\/\/raw\.githubusercontent\.com\/notlate-cn\/edgetunnel\/main\/rules\/shadowrocket\/static-hd\.list,Static\nRULE-SET,https:\/\/raw\.githubusercontent\.com\/notlate-cn\/edgetunnel\/main\/rules\/shadowrocket\/direct\.list,DIRECT\nDOMAIN-KEYWORD,openai,Static,no-resolve\nFINAL,Proxy/m);
 	assert.equal(生成个人Shadowrocket订阅({ enabled: false, shadowrocket: { links: ['vless://unused'] } }), '');
 	assert.equal(生成个人Shadowrocket订阅({ enabled: true }), '');
@@ -236,11 +236,11 @@ test('builds Shadowrocket CF preferred proxies without mixed subscription links'
 	);
 
 	assert.equal(proxies.length, 2);
-	assert.match(proxies[0], /^CF官方优选1-203\.0\.113\.100=vless,203\.0\.113\.100,443,password=cf-uuid,tls=true/);
+	assert.match(proxies[0], /^🇺🇸 CF官方优选1-203\.0\.113\.100=vless,203\.0\.113\.100,443,password=cf-uuid,tls=true/);
 	assert.match(proxies[0], /obfs=websocket/);
 	assert.match(proxies[0], /peer=worker\.example\.com/);
 	assert.match(proxies[0], /obfs-path="\/edge\?ed=2560"/);
-	assert.match(proxies[1], /^CF官方优选2-198\.51\.100\.200=vless,198\.51\.100\.200,2053,password=cf-uuid,tls=true/);
+	assert.match(proxies[1], /^🇺🇸 CF官方优选2-198\.51\.100\.200=vless,198\.51\.100\.200,2053,password=cf-uuid,tls=true/);
 });
 
 function isDocumentationIPv4(ip) {
