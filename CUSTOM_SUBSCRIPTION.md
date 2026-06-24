@@ -113,12 +113,50 @@ https://<your-domain>/sub?token=<token>&clash
 https://<your-domain>/sub?token=<token>&shadowrocket
 ```
 
-The ClashMac URL returns Clash YAML. The Shadowrocket URL returns a lightweight Shadowrocket `.conf` profile with `[Proxy]`, `[Proxy Group]`, and `[Rule]` sections generated from `custom-subscription.private.json`, plus local CF preferred nodes generated directly by the Worker instead of the mixed subscription path.
+The ClashMac URL returns Clash YAML. The Shadowrocket URL returns a Shadowrocket `.conf` profile with `[Proxy]`, `[Proxy Group]`, and `[Rule]` sections generated from `custom-subscription.private.json`, plus local CF preferred nodes generated directly by the Worker instead of the mixed subscription path.
 
-Shadowrocket rules are kept small in the profile and loaded through GitHub-hosted rule sets:
+Shadowrocket rule order is:
 
-```text
-RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-ip.list,🇺🇸 US-StaticIP-via-HD
+1. Your custom `rules` from `custom-subscription.private.json`, mapped to `rules.target`.
+2. Johnshall ad-block rules, loaded from your GitHub-hosted `rules/shadowrocket/johnshall-ad-only.list` and mapped to `REJECT`.
+3. Johnshall `lazy_group.conf` routing rules, with policy groups such as `AI`, `YOUTUBE`, `TWITTER`, `微软服务`, and `苹果服务`.
+4. `FINAL,Proxy`.
+
+This keeps your custom domains at the highest priority, so they override Johnshall categories when both match.
+
+To tune Johnshall category routing, edit `shadowrocket.groupDefaults` in `custom-subscription.private.json`:
+
+```json
+{
+  "shadowrocket": {
+    "groupDefaults": {
+      "AI": ["static_hd", "Proxy", "DIRECT"],
+      "TWITTER": ["static_hd", "Proxy", "DIRECT"],
+      "谷歌服务": ["Proxy", "static_hd", "DIRECT"]
+    }
+  }
+}
 ```
 
-Edit `rules/shadowrocket/static-ip.list`, commit, and push it when you want to change the domains forced through the static IP node.
+Values can be node ids from `nodes`, generated group names such as `Proxy`, or built-in policies such as `DIRECT` and `REJECT`.
+
+If a Johnshall policy should be rewritten entirely instead of shown as its own group, use `shadowrocket.policyMap`:
+
+```json
+{
+  "shadowrocket": {
+    "policyMap": {
+      "FACEBOOK": "static_hd",
+      "游戏平台": "Proxy"
+    }
+  }
+}
+```
+
+Johnshall-derived tracked files can be refreshed with:
+
+```bash
+node tools/sync-shadowrocket-johnshall-rules.mjs
+```
+
+The generated files are derived from `Johnshall/Shadowrocket-ADBlock-Rules-Forever`, licensed under CC BY-SA 4.0.

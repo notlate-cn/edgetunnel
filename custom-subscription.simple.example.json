@@ -4,7 +4,14 @@
   "dnsPreset": "default",
   "addProxiesToGroups": true,
   "shadowrocket": {
-    "ruleSetUrl": "https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-ip.list"
+    "groupDefaults": {
+      "AI": ["static_hd", "Proxy", "DIRECT"],
+      "TWITTER": ["static_hd", "Proxy", "DIRECT"],
+      "TELEGRAM": ["static_hd", "Proxy", "DIRECT"],
+      "微软服务": ["static_hd", "Proxy", "DIRECT"],
+      "苹果服务": ["static_hd", "DIRECT", "Proxy"],
+      "谷歌服务": ["Proxy", "static_hd", "DIRECT"]
+    }
   },
   "nodes": {
     "tt": {

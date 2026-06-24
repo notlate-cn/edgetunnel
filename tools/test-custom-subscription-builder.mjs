@@ -104,13 +104,34 @@ test('builds full KV config from compact node ids', () => {
 	assert.match(output.shadowrocket.proxies[0], /^🇸🇬 SP-TT-203\.0\.113\.10=vless,203\.0\.113\.10,443,password=YOUR-TT-UUID,tls=true/);
 	assert.match(output.shadowrocket.proxies[0], /pbk=YOUR-TT-PUBLIC-KEY/);
 	assert.match(output.shadowrocket.proxies[2], /^🇺🇸 US-StaticIP-via-HD=socks5,192\.0\.2\.30,22324,SOCKS-USER,SOCKS-PASS/);
-	assert.deepEqual(output.shadowrocket.rules, []);
+	assert.deepEqual(output.shadowrocket.rules.slice(0, 5), [
+		'DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,t.co,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-KEYWORD,chatgpt,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,example.test,🇺🇸 US-StaticIP-via-HD,no-resolve',
+	]);
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,AI'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,YOUTUBE'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GitHub/GitHub.list,Proxy'));
+	assert.ok(output.shadowrocket.rules.includes('GEOIP,CN,DIRECT'));
+	assert.ok(!output.shadowrocket.rules.some(rule => /^FINAL,/i.test(rule)));
 	assert.deepEqual(output.shadowrocket.ruleSets, [
 		{
-			url: 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-ip.list',
-			policy: '🇺🇸 US-StaticIP-via-HD',
+			url: 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list',
+			policy: 'REJECT',
 		},
 	]);
+	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'AI'), {
+		name: 'AI',
+		type: 'select',
+		proxies: ['🇺🇸 US-StaticIP-via-HD', 'Proxy', 'DIRECT'],
+	});
+	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'YOUTUBE'), {
+		name: 'YOUTUBE',
+		type: 'select',
+		proxies: ['Proxy', '🇺🇸 US-StaticIP-via-HD', 'DIRECT'],
+	});
 
 	assert.deepEqual(output.clash.rules, [
 		'DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
@@ -156,6 +177,29 @@ test('default emoji patterns cover common countries and regions broadly', () => 
 		const matched = patterns.find(pattern => new RegExp(pattern.match, 'i').test(sample));
 		assert.equal(matched?.flag, flag, sample);
 	}
+});
+
+test('allows overriding Shadowrocket Johnshall policy routing', () => {
+	const output = buildCustomSubscription({
+		...SIMPLE_CONFIG,
+		shadowrocket: {
+			useJohnshallAdBlock: false,
+			groupDefaults: {
+				YOUTUBE: ['static_hd', 'DIRECT'],
+			},
+			policyMap: {
+				FACEBOOK: 'static_hd',
+			},
+		},
+	});
+
+	assert.deepEqual(output.shadowrocket.ruleSets, []);
+	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === 'YOUTUBE'), {
+		name: 'YOUTUBE',
+		type: 'select',
+		proxies: ['🇺🇸 US-StaticIP-via-HD', 'DIRECT'],
+	});
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Facebook/Facebook.list,🇺🇸 US-StaticIP-via-HD'));
 });
 
 test('validates references to missing node ids', () => {

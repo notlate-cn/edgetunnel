@@ -4613,6 +4613,7 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 	const proxyNames = allProxies.map(line => line.split('=')[0].trim()).filter(Boolean);
 	const ruleSets = (Array.isArray(shadowrocketConfig.ruleSets) ? shadowrocketConfig.ruleSets : []).map(转换Shadowrocket规则集).filter(Boolean);
 	const rules = (Array.isArray(shadowrocketConfig.rules) ? shadowrocketConfig.rules : []).map(rule => String(rule || '').trim()).filter(Boolean).map(转换Shadowrocket规则);
+	const groups = (Array.isArray(shadowrocketConfig.groups) ? shadowrocketConfig.groups : []).map(转换Shadowrocket代理分组).filter(Boolean);
 	return [
 		'[General]',
 		'loglevel = notify',
@@ -4624,6 +4625,7 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 		'',
 		'[Proxy Group]',
 		`Proxy = select,${proxyNames.join(',')}`,
+		...groups,
 		'',
 		'[Rule]',
 		...ruleSets,
@@ -4637,6 +4639,15 @@ function 转换Shadowrocket规则集(item) {
 	if (typeof item === 'string') return item.trim();
 	if (!item || typeof item !== 'object' || !item.url || !item.policy) return '';
 	return `RULE-SET,${item.url},${item.policy}${item.noResolve ? ',no-resolve' : ''}`;
+}
+
+function 转换Shadowrocket代理分组(item) {
+	if (typeof item === 'string') return item.trim();
+	if (!item || typeof item !== 'object' || !item.name || !Array.isArray(item.proxies)) return '';
+	const type = item.type || 'select';
+	const proxies = item.proxies.map(proxy => String(proxy || '').trim()).filter(Boolean);
+	if (proxies.length === 0) return '';
+	return `${item.name} = ${type},${proxies.join(',')}`;
 }
 
 function 生成ShadowrocketCF优选代理列表(优选IP列表 = [], config_JSON = {}, 个人订阅配置 = {}) {

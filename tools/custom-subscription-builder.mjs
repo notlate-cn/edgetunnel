@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 const DEFAULT_DNS_BLOCK = `dns:
   enable: true
   ipv6: false
@@ -34,7 +36,38 @@ const DEFAULT_DNS_BLOCK = `dns:
       - '+.youtube.com'
 `;
 
-const DEFAULT_SHADOWROCKET_RULESET_URL = 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-ip.list';
+const DEFAULT_SHADOWROCKET_RULESET_BASE_URL = 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket';
+const DEFAULT_SHADOWROCKET_AD_RULESET_URL = `${DEFAULT_SHADOWROCKET_RULESET_BASE_URL}/johnshall-ad-only.list`;
+const DEFAULT_JOHNSHALL_LAZY_GROUP_RULES = readRuleLines('../rules/shadowrocket/johnshall-lazy-group.rules');
+const DEFAULT_SHADOWROCKET_POLICY_MAP = {
+	PROXY: 'Proxy',
+	Proxy: 'Proxy',
+	proxy: 'Proxy',
+	Direct: 'DIRECT',
+	direct: 'DIRECT',
+	Reject: 'REJECT',
+	reject: 'REJECT',
+};
+const JOHNSHALL_POLICY_GROUPS = [
+	'AI',
+	'YOUTUBE',
+	'NETFLIX',
+	'DISNEY+',
+	'MAX',
+	'SPOTIFY',
+	'TELEGRAM',
+	'PAYPAL',
+	'TWITTER',
+	'FACEBOOK',
+	'AMAZON',
+	'游戏平台',
+	'微软服务',
+	'谷歌服务',
+	'苹果服务',
+	'哔哩哔哩',
+	'TIKTOK',
+];
+const STATIC_FIRST_SHADOWROCKET_GROUPS = new Set(['AI', 'TELEGRAM', 'PAYPAL', 'TWITTER', '微软服务', '苹果服务']);
 
 const CURATED_EMOJI_PATTERNS = [
 	{ match: '新加坡|singapore|(?:^|[\\s_-])sg(?:[\\s_-]|$)|(?:^|[\\s_-])sp(?:[\\s_-]|$)', flag: '🇸🇬' },
@@ -364,6 +397,13 @@ function assertOptionalArray(value, path) {
 	return value;
 }
 
+function readRuleLines(relativePath) {
+	return readFileSync(new URL(relativePath, import.meta.url), 'utf8')
+		.split(/\r?\n/)
+		.map(line => line.trim())
+		.filter(line => line && !line.startsWith('#'));
+}
+
 function quoteYamlString(value) {
 	return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
@@ -599,11 +639,10 @@ function buildRules(configRules, idToName) {
 function buildShadowrocketRuleSets(config = {}, idToName, rules) {
 	const output = [];
 	const shadowrocketConfig = config.shadowrocket || {};
-	const target = config.rules?.target ? requireKnownNodeName(idToName, config.rules.target) : null;
-	if (rules.length > 0 && target && shadowrocketConfig.useDefaultRuleSet !== false) {
+	if (shadowrocketConfig.useJohnshallAdBlock !== false) {
 		output.push({
-			url: shadowrocketConfig.ruleSetUrl || DEFAULT_SHADOWROCKET_RULESET_URL,
-			policy: target,
+			url: shadowrocketConfig.adRuleSetUrl || DEFAULT_SHADOWROCKET_AD_RULESET_URL,
+			policy: 'REJECT',
 		});
 	}
 	for (const item of assertOptionalArray(shadowrocketConfig.ruleSets, 'shadowrocket.ruleSets')) {
@@ -618,6 +657,101 @@ function buildShadowrocketRuleSets(config = {}, idToName, rules) {
 			url: item.url,
 			policy: resolveNodeName(idToName, item.policy),
 			noResolve: item.noResolve === true,
+		});
+	}
+	return output;
+}
+
+function shadowrocketPolicyIndex(parts) {
+	if (parts.length < 3) return -1;
+	if (parts.at(-1) === 'no-resolve') return parts.length - 2;
+	return parts.length - 1;
+}
+
+function buildShadowrocketPolicyMap(config, idToName) {
+	const shadowrocketConfig = config.shadowrocket || {};
+	const configuredMap = shadowrocketConfig.policyMap || {};
+	if (shadowrocketConfig.policyMap) assertPlainObject(configuredMap, 'shadowrocket.policyMap');
+	return Object.fromEntries(Object.entries({
+		...DEFAULT_SHADOWROCKET_POLICY_MAP,
+		...configuredMap,
+	}).map(([from, to]) => {
+		assertRequiredString(from, 'shadowrocket.policyMap key');
+		assertRequiredString(to, `shadowrocket.policyMap.${from}`);
+		return [from, resolveNodeName(idToName, to)];
+	}));
+}
+
+function normalizeShadowrocketRule(rule, idToName, policyMap = {}) {
+	const parts = String(rule || '').trim().split(',').map(part => part.trim());
+	const policyIndex = shadowrocketPolicyIndex(parts);
+	if (policyIndex >= 0) {
+		const policy = parts[policyIndex];
+		parts[policyIndex] = policyMap[policy] || resolveNodeName(idToName, policy);
+	}
+	return parts.join(',');
+}
+
+function buildShadowrocketRules(config = {}, idToName, rules) {
+	const shadowrocketConfig = config.shadowrocket || {};
+	const policyMap = buildShadowrocketPolicyMap(config, idToName);
+	const output = [];
+	if (shadowrocketConfig.inlineCustomRules !== false) {
+		output.push(...rules.map(rule => normalizeShadowrocketRule(rule, idToName, policyMap)));
+	}
+	for (const rule of assertOptionalArray(shadowrocketConfig.rules, 'shadowrocket.rules')) {
+		assertRequiredString(rule, 'shadowrocket.rules[]');
+		output.push(normalizeShadowrocketRule(rule, idToName, policyMap));
+	}
+	if (shadowrocketConfig.useJohnshallLazyGroup !== false) {
+		output.push(...DEFAULT_JOHNSHALL_LAZY_GROUP_RULES
+			.filter(rule => !/^FINAL,/i.test(rule))
+			.map(rule => normalizeShadowrocketRule(rule, idToName, policyMap)));
+	}
+	return output;
+}
+
+function uniqueList(values) {
+	const output = [];
+	for (const value of values) {
+		if (value && !output.includes(value)) output.push(value);
+	}
+	return output;
+}
+
+function buildDefaultShadowrocketGroup(groupName, target) {
+	if (STATIC_FIRST_SHADOWROCKET_GROUPS.has(groupName) && target) return uniqueList([target, 'Proxy', 'DIRECT']);
+	return uniqueList(['Proxy', target, 'DIRECT']);
+}
+
+function buildShadowrocketGroups(config = {}, idToName) {
+	const shadowrocketConfig = config.shadowrocket || {};
+	const output = [];
+	const target = config.rules?.target ? requireKnownNodeName(idToName, config.rules.target) : null;
+	const groupDefaults = shadowrocketConfig.groupDefaults || {};
+	if (shadowrocketConfig.groupDefaults) assertPlainObject(groupDefaults, 'shadowrocket.groupDefaults');
+	if (shadowrocketConfig.useJohnshallLazyGroup !== false) {
+		for (const groupName of JOHNSHALL_POLICY_GROUPS) {
+			const proxies = groupDefaults[groupName] || buildDefaultShadowrocketGroup(groupName, target);
+			output.push({
+				name: groupName,
+				type: 'select',
+				proxies: assertOptionalArray(proxies, `shadowrocket.groupDefaults.${groupName}`).map(proxy => resolveNodeName(idToName, proxy)),
+			});
+		}
+	}
+	for (const group of assertOptionalArray(shadowrocketConfig.groups, 'shadowrocket.groups')) {
+		if (typeof group === 'string') {
+			output.push(group);
+			continue;
+		}
+		assertPlainObject(group, 'shadowrocket.groups[]');
+		assertRequiredString(group.name, 'shadowrocket.groups[].name');
+		const proxies = assertOptionalArray(group.proxies, `shadowrocket.groups.${group.name}.proxies`);
+		output.push({
+			name: group.name,
+			type: group.type || 'select',
+			proxies: proxies.map(proxy => resolveNodeName(idToName, proxy)),
 		});
 	}
 	return output;
@@ -692,6 +826,8 @@ export function buildCustomSubscription(config) {
 		.filter(Boolean);
 	const rules = buildRules(config.rules, idToName);
 	const shadowrocketRuleSets = buildShadowrocketRuleSets(config, idToName, rules);
+	const shadowrocketRules = buildShadowrocketRules(config, idToName, rules);
+	const shadowrocketGroups = buildShadowrocketGroups(config, idToName);
 
 	return {
 		enabled: config.enabled !== false,
@@ -699,8 +835,9 @@ export function buildCustomSubscription(config) {
 		shadowrocket: {
 			links: shadowrocketLinks,
 			proxies: shadowrocketProxies,
-			rules: config.shadowrocket?.inlineRules === true ? rules : [],
+			rules: shadowrocketRules,
 			ruleSets: shadowrocketRuleSets,
+			groups: shadowrocketGroups,
 		},
 		clash: {
 			dns: resolveDnsBlock(config),
