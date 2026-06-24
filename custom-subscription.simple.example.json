@@ -3,6 +3,9 @@
   "appendServerToName": true,
   "dnsPreset": "default",
   "addProxiesToGroups": true,
+  "shadowrocket": {
+    "ruleSetUrl": "https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-ip.list"
+  },
   "nodes": {
     "tt": {
       "type": "vless-reality",

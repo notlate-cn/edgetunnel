@@ -17,6 +17,12 @@
     "rules": [
       "DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve",
       "DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve"
+    ],
+    "ruleSets": [
+      {
+        "url": "https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-ip.list",
+        "policy": "🇺🇸 US-StaticIP-via-HD"
+      }
     ]
   },
   "clash": {

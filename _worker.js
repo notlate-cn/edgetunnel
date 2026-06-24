@@ -4188,6 +4188,7 @@ const 个人订阅默认配置 = {
 		links: [],
 		proxies: [],
 		rules: [],
+		ruleSets: [],
 	},
 	clash: {
 		dns: '',
@@ -4610,6 +4611,7 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 	const allProxies = [...proxies, ...额外代理列表.map(line => String(line || '').trim()).filter(Boolean)];
 	if (allProxies.length === 0) return links.join('\n');
 	const proxyNames = allProxies.map(line => line.split('=')[0].trim()).filter(Boolean);
+	const ruleSets = (Array.isArray(shadowrocketConfig.ruleSets) ? shadowrocketConfig.ruleSets : []).map(转换Shadowrocket规则集).filter(Boolean);
 	const rules = (Array.isArray(shadowrocketConfig.rules) ? shadowrocketConfig.rules : []).map(rule => String(rule || '').trim()).filter(Boolean).map(转换Shadowrocket规则);
 	return [
 		'[General]',
@@ -4624,10 +4626,17 @@ function 生成个人Shadowrocket订阅(配置 = {}, 额外代理列表 = []) {
 		`Proxy = select,${proxyNames.join(',')}`,
 		'',
 		'[Rule]',
+		...ruleSets,
 		...rules,
 		'FINAL,Proxy',
 		'',
 	].join('\n');
+}
+
+function 转换Shadowrocket规则集(item) {
+	if (typeof item === 'string') return item.trim();
+	if (!item || typeof item !== 'object' || !item.url || !item.policy) return '';
+	return `RULE-SET,${item.url},${item.policy}${item.noResolve ? ',no-resolve' : ''}`;
 }
 
 function 生成ShadowrocketCF优选代理列表(优选IP列表 = [], config_JSON = {}, 个人订阅配置 = {}) {

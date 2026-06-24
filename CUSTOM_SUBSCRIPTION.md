@@ -114,3 +114,11 @@ https://<your-domain>/sub?token=<token>&shadowrocket
 ```
 
 The ClashMac URL returns Clash YAML. The Shadowrocket URL returns a lightweight Shadowrocket `.conf` profile with `[Proxy]`, `[Proxy Group]`, and `[Rule]` sections generated from `custom-subscription.private.json`, plus local CF preferred nodes generated directly by the Worker instead of the mixed subscription path.
+
+Shadowrocket rules are kept small in the profile and loaded through GitHub-hosted rule sets:
+
+```text
+RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-ip.list,🇺🇸 US-StaticIP-via-HD
+```
+
+Edit `rules/shadowrocket/static-ip.list`, commit, and push it when you want to change the domains forced through the static IP node.

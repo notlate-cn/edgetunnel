@@ -34,6 +34,8 @@ const DEFAULT_DNS_BLOCK = `dns:
       - '+.youtube.com'
 `;
 
+const DEFAULT_SHADOWROCKET_RULESET_URL = 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-ip.list';
+
 const CURATED_EMOJI_PATTERNS = [
 	{ match: '新加坡|singapore|(?:^|[\\s_-])sg(?:[\\s_-]|$)|(?:^|[\\s_-])sp(?:[\\s_-]|$)', flag: '🇸🇬' },
 	{ match: '美国|美國|united\\s*states|america|(?:^|[\\s_-])us(?:[\\s_-]|$)|cloudflare|cf官方', flag: '🇺🇸' },
@@ -594,6 +596,33 @@ function buildRules(configRules, idToName) {
 	return output;
 }
 
+function buildShadowrocketRuleSets(config = {}, idToName, rules) {
+	const output = [];
+	const shadowrocketConfig = config.shadowrocket || {};
+	const target = config.rules?.target ? requireKnownNodeName(idToName, config.rules.target) : null;
+	if (rules.length > 0 && target && shadowrocketConfig.useDefaultRuleSet !== false) {
+		output.push({
+			url: shadowrocketConfig.ruleSetUrl || DEFAULT_SHADOWROCKET_RULESET_URL,
+			policy: target,
+		});
+	}
+	for (const item of assertOptionalArray(shadowrocketConfig.ruleSets, 'shadowrocket.ruleSets')) {
+		if (typeof item === 'string') {
+			output.push(item);
+			continue;
+		}
+		assertPlainObject(item, 'shadowrocket.ruleSets[]');
+		assertRequiredString(item.url, 'shadowrocket.ruleSets[].url');
+		assertRequiredString(item.policy, 'shadowrocket.ruleSets[].policy');
+		output.push({
+			url: item.url,
+			policy: resolveNodeName(idToName, item.policy),
+			noResolve: item.noResolve === true,
+		});
+	}
+	return output;
+}
+
 function buildGroupDefaults(groupDefaults, idToName) {
 	if (!groupDefaults) return {};
 	assertPlainObject(groupDefaults, 'groupDefaults');
@@ -662,6 +691,7 @@ export function buildCustomSubscription(config) {
 		.map(([nodeId, node]) => buildShadowrocketProxy(node, idToName.get(nodeId), `nodes.${nodeId}`))
 		.filter(Boolean);
 	const rules = buildRules(config.rules, idToName);
+	const shadowrocketRuleSets = buildShadowrocketRuleSets(config, idToName, rules);
 
 	return {
 		enabled: config.enabled !== false,
@@ -669,7 +699,8 @@ export function buildCustomSubscription(config) {
 		shadowrocket: {
 			links: shadowrocketLinks,
 			proxies: shadowrocketProxies,
-			rules,
+			rules: config.shadowrocket?.inlineRules === true ? rules : [],
+			ruleSets: shadowrocketRuleSets,
 		},
 		clash: {
 			dns: resolveDnsBlock(config),
