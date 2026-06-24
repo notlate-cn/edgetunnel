@@ -150,6 +150,18 @@ For Shadowrocket-only changes, committing and pushing the list is enough because
 
 The compact `rules` block in `custom-subscription.private.json` should normally only contain `target` and `source`; the domain entries live in `rules/shadowrocket/static-hd.list`.
 
+To make ClashMac receive the same downloaded rule-set routing as Shadowrocket, enable build-time expansion:
+
+```json
+{
+  "clash": {
+    "expandShadowrocketRuleSets": true
+  }
+}
+```
+
+When this is enabled, `./build.sh` and `./deploy.sh` download the non-ad, non-custom Shadowrocket `RULE-SET` files and inline Clash-compatible entries into `clash.rules`. Unsupported Shadowrocket-only rule types such as `USER-AGENT` are skipped. This keeps ClashMac independent of remote `rule-providers`.
+
 To tune Johnshall category routing, edit `shadowrocket.policyMap` in `custom-subscription.private.json`:
 
 ```json

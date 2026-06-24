@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { buildCustomSubscription, stringifyCustomSubscription } from './custom-subscription-builder.mjs';
+import { loadClashRuleSetContents } from './remote-rule-set-loader.mjs';
 
 function printUsage() {
 	console.log(`Usage:
@@ -24,7 +25,8 @@ const [inputPath = 'custom-subscription.private.json', outputPath = 'custom-subs
 
 try {
 	const compactConfig = JSON.parse(readFileSync(inputPath, 'utf8'));
-	const generatedConfig = buildCustomSubscription(compactConfig);
+	const ruleSetContents = await loadClashRuleSetContents(compactConfig);
+	const generatedConfig = buildCustomSubscription(compactConfig, { ruleSetContents });
 	writeFileSync(outputPath, stringifyCustomSubscription(generatedConfig));
 	console.log(`Wrote ${resolve(outputPath)} from ${resolve(inputPath)}`);
 } catch (error) {

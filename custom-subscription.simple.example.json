@@ -3,6 +3,9 @@
   "appendServerToName": true,
   "dnsPreset": "default",
   "addProxiesToGroups": true,
+  "clash": {
+    "expandShadowrocketRuleSets": true
+  },
   "nodes": {
     "tt": {
       "type": "vless-reality",

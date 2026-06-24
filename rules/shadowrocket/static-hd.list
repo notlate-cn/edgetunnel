@@ -1,10 +1,7 @@
-DOMAIN-SUFFIX,x.com
-DOMAIN-SUFFIX,t.co
 DOMAIN-SUFFIX,gemini.gstatic.com
 DOMAIN-SUFFIX,argotunnel.com
 DOMAIN-SUFFIX,cloudflare.com
 DOMAIN-SUFFIX,cloudflarebridge.com
-DOMAIN-KEYWORD,twitter
 DOMAIN-KEYWORD,twimg
 DOMAIN-KEYWORD,anthropic
 DOMAIN-KEYWORD,claude

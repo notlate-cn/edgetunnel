@@ -85,6 +85,18 @@ const DEFAULT_PROXY_POOL_GROUPS = [
 	{ name: 'Google', proxies: ['三网优化', '普通代理', '静态住宅', 'DIRECT'] },
 	{ name: 'Proxy', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
 ];
+const CLASH_SUPPORTED_RULE_TYPES = new Set([
+	'DOMAIN',
+	'DOMAIN-SUFFIX',
+	'DOMAIN-KEYWORD',
+	'IP-CIDR',
+	'IP-CIDR6',
+	'GEOIP',
+	'PROCESS-NAME',
+	'SRC-IP-CIDR',
+	'DST-PORT',
+	'MATCH',
+]);
 
 const CURATED_EMOJI_PATTERNS = [
 	{ match: '新加坡|singapore|(?:^|[\\s_-])sg(?:[\\s_-]|$)|(?:^|[\\s_-])sp(?:[\\s_-]|$)', flag: '🇸🇬' },
@@ -678,6 +690,77 @@ function buildRules(configRules, idToName) {
 	return output;
 }
 
+function isCustomRuleSetUrl(url, config = {}) {
+	const customUrl = config.shadowrocket?.customRuleSetUrl || (config.rules?.source ? buildGitHubRawUrl(config.rules.source) : DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL);
+	return url === customUrl || url === DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL;
+}
+
+function parseRuleSetRule(rule) {
+	const parts = String(rule || '').trim().split(',').map(part => part.trim()).filter(Boolean);
+	if (parts.length < 2 || parts[0] !== 'RULE-SET') return null;
+	return {
+		url: parts[1],
+		policy: parts[2] || '',
+		noResolve: parts.includes('no-resolve'),
+	};
+}
+
+function getRuleSetContent(ruleSetContents, url) {
+	if (!ruleSetContents) return '';
+	if (ruleSetContents instanceof Map) return ruleSetContents.get(url) || '';
+	return ruleSetContents[url] || '';
+}
+
+export function collectClashExpandableRuleSetUrls(shadowrocketRules = [], config = {}) {
+	if (config.clash?.expandShadowrocketRuleSets !== true) return [];
+	const urls = [];
+	for (const rule of shadowrocketRules) {
+		const parsed = parseRuleSetRule(rule);
+		if (!parsed || !parsed.url.startsWith('http')) continue;
+		if (parsed.policy === 'REJECT' && config.clash?.expandRejectRuleSets !== true) continue;
+		if (isCustomRuleSetUrl(parsed.url, config)) continue;
+		if (!urls.includes(parsed.url)) urls.push(parsed.url);
+	}
+	return urls;
+}
+
+function convertShadowrocketRuleToClash(rule, policy) {
+	const parts = String(rule || '').trim().split(',').map(part => part.trim()).filter(Boolean);
+	if (parts.length < 2 || parts[0].startsWith('#')) return '';
+	const type = parts[0].toUpperCase();
+	if (!CLASH_SUPPORTED_RULE_TYPES.has(type)) return '';
+	const noResolve = parts.at(-1) === 'no-resolve';
+	const body = noResolve ? parts.slice(0, -1) : parts;
+	if (body.length < 2) return '';
+	if (body.length >= 3) return noResolve ? `${body.join(',')},no-resolve` : body.join(',');
+	return noResolve ? `${body[0]},${body[1]},${policy},no-resolve` : `${body[0]},${body[1]},${policy}`;
+}
+
+function expandRuleSetContentForClash(content, policy) {
+	return String(content || '')
+		.split(/\r?\n/)
+		.map(line => convertShadowrocketRuleToClash(line, policy))
+		.filter(Boolean);
+}
+
+function buildExpandedClashRules(config = {}, customRules = [], shadowrocketRules = [], options = {}) {
+	const clashConfig = config.clash || {};
+	if (clashConfig.expandShadowrocketRuleSets !== true) return customRules;
+	const output = [...customRules];
+	for (const rule of shadowrocketRules) {
+		const parsed = parseRuleSetRule(rule);
+		if (parsed) {
+			if (parsed.policy === 'REJECT' && clashConfig.expandRejectRuleSets !== true) continue;
+			if (isCustomRuleSetUrl(parsed.url, config)) continue;
+			output.push(...expandRuleSetContentForClash(getRuleSetContent(options.ruleSetContents, parsed.url), parsed.policy));
+			continue;
+		}
+		const converted = convertShadowrocketRuleToClash(rule, '');
+		if (converted) output.push(converted);
+	}
+	return uniqueList(output);
+}
+
 function buildShadowrocketRuleSets(config = {}, idToName, rules) {
 	const output = [];
 	const shadowrocketConfig = config.shadowrocket || {};
@@ -851,7 +934,7 @@ function resolveDnsBlock(config) {
 	throw new Error(`unsupported dnsPreset "${config.dnsPreset}"`);
 }
 
-export function buildCustomSubscription(config) {
+export function buildCustomSubscription(config, options = {}) {
 	assertPlainObject(config, 'config');
 	assertPlainObject(config.nodes, 'nodes');
 
@@ -882,6 +965,7 @@ export function buildCustomSubscription(config) {
 	const shadowrocketRules = buildShadowrocketRules(config, idToName, rules);
 	const shadowrocketGroups = buildShadowrocketGroups(config, idToName);
 	const clashGroups = buildClashGroups(config, idToName);
+	const clashRules = buildExpandedClashRules(config, rules, shadowrocketRules, options);
 
 	return {
 		enabled: config.enabled !== false,
@@ -896,7 +980,7 @@ export function buildCustomSubscription(config) {
 		clash: {
 			dns: resolveDnsBlock(config),
 			proxies,
-			rules,
+			rules: clashRules,
 			groups: clashGroups,
 			addProxiesToGroups: config.addProxiesToGroups !== false,
 			groupDefaults: buildGroupDefaults(config.groupDefaults, idToName),

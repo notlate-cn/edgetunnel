@@ -231,12 +231,12 @@ test('builds Clash and Shadowrocket custom rules from one source list', () => {
 	});
 
 	assert.deepEqual(output.clash.rules.slice(0, 4), [
-		'DOMAIN-SUFFIX,x.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
-		'DOMAIN-SUFFIX,t.co,🇺🇸 US-StaticIP-via-HD,no-resolve',
 		'DOMAIN-SUFFIX,gemini.gstatic.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
 		'DOMAIN-SUFFIX,argotunnel.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,cloudflare.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
+		'DOMAIN-SUFFIX,cloudflarebridge.com,🇺🇸 US-StaticIP-via-HD,no-resolve',
 	]);
-	assert.equal(output.clash.rules.length, 19);
+	assert.equal(output.clash.rules.length, 16);
 	assert.deepEqual(output.shadowrocket.rules, [
 		'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,🇺🇸 US-StaticIP-via-HD,no-resolve',
 	]);
@@ -298,9 +298,49 @@ test('builds three proxy pools and routes Google separately from YouTube', () =>
 		type: 'select',
 		proxies: ['🇸🇬 SP-TT-203.0.113.10', 'CF官方优选*'],
 	});
-	assert.equal(output.clash.rules[0], 'DOMAIN-SUFFIX,x.com,静态住宅,no-resolve');
+	assert.equal(output.clash.rules[0], 'DOMAIN-SUFFIX,gemini.gstatic.com,静态住宅,no-resolve');
 }
 );
+
+test('expands downloaded Shadowrocket rule sets into Clash rules when enabled', () => {
+	const output = buildCustomSubscription({
+		...SIMPLE_CONFIG,
+		clash: {
+			expandShadowrocketRuleSets: true,
+		},
+	}, {
+		ruleSetContents: {
+			'https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt': [
+				'DOMAIN-SUFFIX,openai.com',
+				'USER-AGENT,OpenAI*',
+			].join('\n'),
+			'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Twitter/Twitter.list': [
+				'DOMAIN-SUFFIX,x.com',
+				'DOMAIN-SUFFIX,t.co',
+				'DOMAIN-KEYWORD,twitter',
+			].join('\n'),
+			'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list': [
+				'DOMAIN-SUFFIX,youtube.com',
+			].join('\n'),
+			'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Apple/Apple.list': [
+				'DOMAIN-SUFFIX,apple.com',
+			].join('\n'),
+			'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list': [
+				'DOMAIN-SUFFIX,ads.example',
+			].join('\n'),
+		},
+	});
+
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,openai.com,静态住宅'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,x.com,静态住宅'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,t.co,静态住宅'));
+	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,twitter,静态住宅'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,youtube.com,Proxy'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,apple.com,DIRECT'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,litix.io,Proxy'));
+	assert.ok(!output.clash.rules.includes('USER-AGENT,OpenAI*,静态住宅'));
+	assert.ok(!output.clash.rules.includes('DOMAIN-SUFFIX,ads.example,REJECT'));
+});
 
 test('validates references to missing node ids', () => {
 	assert.throws(
