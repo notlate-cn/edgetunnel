@@ -119,7 +119,7 @@ Shadowrocket rule order is:
 
 1. Your custom Shadowrocket rule set from `rules/shadowrocket/static-hd.list`, mapped to `rules.target`.
 2. Johnshall ad-block rules, loaded from your GitHub-hosted `rules/shadowrocket/johnshall-ad-only.list` and mapped to `REJECT`.
-3. Johnshall `lazy_group.conf` routing rules. `谷歌服务` is mapped to `Google`; `YOUTUBE` and other overseas categories are mapped to `Proxy`; domestic rules remain `DIRECT`.
+3. Johnshall `lazy_group.conf` routing rules. `AI` is mapped to `静态住宅`; `谷歌服务` is mapped to `Google`; `YOUTUBE` and other overseas categories are mapped to `Proxy`; domestic rules remain `DIRECT`.
 4. `FINAL,Proxy`.
 
 This keeps your custom domains at the highest priority, so they override Johnshall categories when both match.
@@ -156,6 +156,7 @@ To tune Johnshall category routing, edit `shadowrocket.policyMap` in `custom-sub
 {
   "shadowrocket": {
     "policyMap": {
+      "AI": "静态住宅",
       "YOUTUBE": "Proxy",
       "谷歌服务": "Google"
     }

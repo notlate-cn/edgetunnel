@@ -70,6 +70,7 @@ const DEFAULT_POLICY_MAP = {
 	Reject: 'REJECT',
 	reject: 'REJECT',
 	...Object.fromEntries(JOHNSHALL_POLICY_GROUPS.map(group => [group, 'Proxy'])),
+	AI: '静态住宅',
 	谷歌服务: 'Google',
 };
 const DEFAULT_PROXY_POOL_GROUPS = [
