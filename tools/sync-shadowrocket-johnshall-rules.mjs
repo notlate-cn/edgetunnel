@@ -40,6 +40,10 @@ function extractRuleLines(text, { stripPolicy = false, dropFinal = false } = {})
 	return output;
 }
 
+function normalizeShadowrocketRuleSet(line) {
+	return line.replace('/rule/QuantumultX/', '/rule/Shadowrocket/');
+}
+
 async function readSource(fileName, offlineRepo) {
 	if (offlineRepo) return readFileSync(resolve(offlineRepo, fileName), 'utf8');
 	const response = await fetch(`${SOURCE_BASE}/${fileName}`);
@@ -73,7 +77,7 @@ try {
 	const adOnly = await readSource('sr_ad_only.conf', options.offlineRepo);
 	const lazyGroup = await readSource('lazy_group.conf', options.offlineRepo);
 	const adRules = extractRuleLines(adOnly, { stripPolicy: true });
-	const lazyGroupRules = extractRuleLines(lazyGroup, { dropFinal: true });
+	const lazyGroupRules = extractRuleLines(lazyGroup, { dropFinal: true }).map(normalizeShadowrocketRuleSet);
 
 	writeFileSync(resolve(OUTPUT_DIR, 'johnshall-ad-only.list'), `${adRules.join('\n')}\n`);
 	writeFileSync(resolve(OUTPUT_DIR, 'johnshall-lazy-group.rules'), `${lazyGroupRules.join('\n')}\n`);

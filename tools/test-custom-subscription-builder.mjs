@@ -114,8 +114,12 @@ test('builds full KV config from compact node ids', () => {
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,Proxy'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GitHub/GitHub.list,Proxy'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list,Google'));
-	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Apple/Apple.list,DIRECT'));
+	assert.ok(!output.shadowrocket.rules.some(rule => rule.includes('/QuantumultX/')));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Apple/Apple.list,DIRECT'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/BiliBili/BiliBili.list,DIRECT'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/WeChat/WeChat.list,DIRECT'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Global/Global.list,Proxy'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/China/China.list,DIRECT'));
 	assert.ok(output.shadowrocket.rules.includes('GEOIP,CN,DIRECT'));
 	assert.equal(output.shadowrocket.rules[1], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT');
 	assert.ok(!output.shadowrocket.rules.some(rule => /^FINAL,/i.test(rule)));
