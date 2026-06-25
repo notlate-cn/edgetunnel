@@ -107,15 +107,15 @@ test('builds full KV config from compact node ids', () => {
 	assert.equal(output.shadowrocket.rules[0], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,🇺🇸 US-StaticIP-via-HD,no-resolve');
 	assert.ok(!output.shadowrocket.rules.some(rule => rule.startsWith('DOMAIN-SUFFIX,x.com,')));
 	assert.ok(!output.shadowrocket.rules.some(rule => rule.startsWith('DOMAIN-KEYWORD,openai,')));
-	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,静态住宅'));
-	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Telegram/Telegram.list,静态住宅'));
-	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PayPal/PayPal.list,静态住宅'));
-	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Twitter/Twitter.list,静态住宅'));
-	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,Proxy'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,AI'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Telegram/Telegram.list,社交支付'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PayPal/PayPal.list,社交支付'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Twitter/Twitter.list,社交支付'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,YouTube'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/GitHub/GitHub.list,Proxy'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list,Google'));
 	assert.ok(!output.shadowrocket.rules.some(rule => rule.includes('/QuantumultX/')));
-	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Apple/Apple.list,DIRECT'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Apple/Apple.list,Apple'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/BiliBili/BiliBili.list,DIRECT'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/WeChat/WeChat.list,DIRECT'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Global/Global.list,Proxy'));
@@ -291,7 +291,7 @@ test('builds three proxy pools and routes Google separately from YouTube', () =>
 	});
 	assert.equal(output.shadowrocket.rules[0], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,静态住宅,no-resolve');
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list,Google'));
-	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,Proxy'));
+	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,YouTube'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT'));
 	assert.deepEqual(output.clash.groups.find(group => group.name === '普通代理'), {
 		name: '普通代理',
@@ -301,6 +301,95 @@ test('builds three proxy pools and routes Google separately from YouTube', () =>
 	assert.equal(output.clash.rules[0], 'DOMAIN-SUFFIX,gemini.gstatic.com,静态住宅,no-resolve');
 }
 );
+
+test('builds compact business groups and classified custom Clash rules', () => {
+	const output = buildCustomSubscription({
+		...SIMPLE_CONFIG,
+		nodes: {
+			...SIMPLE_CONFIG.nodes,
+			static_tt: {
+				type: 'socks5-chain',
+				flag: '🇺🇸',
+				name: 'US-StaticIP-via-TT',
+				server: '192.0.2.31',
+				port: 22324,
+				username: 'SOCKS-USER',
+				password: 'SOCKS-PASS',
+				dialer: 'tt',
+			},
+		},
+		rules: {
+			sources: [
+				{ target: 'AI', source: 'rules/custom/ai.list' },
+				{ target: '社交支付', source: 'rules/custom/social-payment.list' },
+				{ target: '账号服务', source: 'rules/custom/account-services.list' },
+				{ target: 'Apple', source: 'rules/custom/apple.list' },
+			],
+		},
+		clash: {
+			expandShadowrocketRuleSets: true,
+		},
+	}, {
+		ruleSetContents: {
+			'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list': [
+				'DOMAIN-SUFFIX,cursor.com',
+			].join('\n'),
+			'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/OpenAi.list': [
+				'DOMAIN-SUFFIX,openai.com',
+			].join('\n'),
+			'https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt': [
+				'DOMAIN-SUFFIX,openrouter.ai',
+				'DOMAIN-SUFFIX,openai.com',
+			].join('\n'),
+			'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Twitter/Twitter.list': [
+				'DOMAIN-SUFFIX,x.com',
+			].join('\n'),
+			'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PayPal/PayPal.list': [
+				'DOMAIN-SUFFIX,paypal.com',
+			].join('\n'),
+			'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list': [
+				'DOMAIN-SUFFIX,google.com',
+			].join('\n'),
+			'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list': [
+				'DOMAIN-SUFFIX,youtube.com',
+			].join('\n'),
+			'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Netflix/Netflix.list': [
+				'DOMAIN-SUFFIX,netflix.com',
+			].join('\n'),
+		},
+	});
+
+	assert.deepEqual(output.clash.groups.map(group => group.name), [
+		'AI',
+		'社交支付',
+		'账号服务',
+		'Google',
+		'YouTube',
+		'流媒体',
+		'Apple',
+		'Proxy',
+		'静态住宅',
+		'三网优化',
+		'普通代理',
+	]);
+	assert.deepEqual(output.clash.groups.find(group => group.name === 'AI').proxies, ['静态住宅', '三网优化', '普通代理', 'DIRECT']);
+	assert.deepEqual(output.clash.groups.find(group => group.name === '社交支付').proxies, ['静态住宅', '普通代理', '三网优化', 'DIRECT']);
+	assert.deepEqual(output.clash.groups.find(group => group.name === '账号服务').proxies, ['静态住宅', '三网优化', '普通代理', 'DIRECT']);
+	assert.deepEqual(output.clash.groups.find(group => group.name === 'Apple').proxies, ['DIRECT', '三网优化', '普通代理', '静态住宅']);
+	assert.deepEqual(output.clash.groups.find(group => group.name === '普通代理').proxies, ['🇸🇬 SP-TT-203.0.113.10', 'CF官方优选*']);
+	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,openai,AI,no-resolve'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,wise.com,社交支付,no-resolve'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,cloudflare.com,账号服务,no-resolve'));
+	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,icloud,Apple,no-resolve'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,cursor.com,AI'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,openai.com,AI'));
+	assert.equal(output.clash.rules.filter(rule => rule === 'DOMAIN-SUFFIX,openai.com,AI').length, 1);
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,x.com,社交支付'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,paypal.com,社交支付'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,google.com,Google'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,youtube.com,YouTube'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,netflix.com,流媒体'));
+});
 
 test('expands downloaded Shadowrocket rule sets into Clash rules when enabled', () => {
 	const output = buildCustomSubscription({
@@ -331,14 +420,14 @@ test('expands downloaded Shadowrocket rule sets into Clash rules when enabled', 
 		},
 	});
 
-	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,openai.com,静态住宅'));
-	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,x.com,静态住宅'));
-	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,t.co,静态住宅'));
-	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,twitter,静态住宅'));
-	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,youtube.com,Proxy'));
-	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,apple.com,DIRECT'));
-	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,litix.io,Proxy'));
-	assert.ok(!output.clash.rules.includes('USER-AGENT,OpenAI*,静态住宅'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,openai.com,AI'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,x.com,社交支付'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,t.co,社交支付'));
+	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,twitter,社交支付'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,youtube.com,YouTube'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,apple.com,Apple'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,litix.io,流媒体'));
+	assert.ok(!output.clash.rules.includes('USER-AGENT,OpenAI*,AI'));
 	assert.ok(!output.clash.rules.includes('DOMAIN-SUFFIX,ads.example,REJECT'));
 });
 
@@ -441,9 +530,8 @@ test('deploy shell wrapper defaults to .env.local KV namespace and private confi
 		assert.equal(deployResult.status, 0, deployResult.stderr || deployResult.stdout);
 		assert.match(deployResult.stdout, /from .*custom-subscription\.private\.json/);
 		assert.match(deployResult.stdout, /--namespace-id test-env-file-namespace --remote/);
-		assert.match(deployResult.stdout, /ClashMac:\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&clash/);
-		assert.match(deployResult.stdout, /Shadowrocket config \(rules\):\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&shadowrocket-conf/);
-		assert.match(deployResult.stdout, /Shadowrocket nodes \(Subscribe\):\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&shadowrocket-links/);
+		assert.match(deployResult.stdout, /Main config:\nhttps:\/\/example\.workers\.dev\/sub\?token=aa1e7a0d37bf5ebd8edf5127615f967c&clash/);
+		assert.ok(!deployResult.stdout.includes('shadowrocket'));
 	} finally {
 		rmSync(tempDir, { recursive: true, force: true });
 	}

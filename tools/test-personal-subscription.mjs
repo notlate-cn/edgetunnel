@@ -1,45 +1,17 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
 
-function loadWorkerExports() {
-	const source = readFileSync(new URL('../_worker.js', import.meta.url), 'utf8');
-	const instrumented = source.replace('export default {', 'globalThis.__workerDefault = {') + `
-globalThis.__testExports = {
+import {
 	添加个人节点地址到备注,
-	应用个人Clash配置,
-	生成个人Clash订阅,
-	生成ShadowrocketCF优选代理列表,
-	生成ShadowrocketCF优选链接列表,
-	生成ClashCF优选代理列表,
-	生成个人Shadowrocket订阅,
-	生成个人Shadowrocket节点订阅,
-	读取缓存CF优选列表,
+	应用个人文本配置,
 	读取个人订阅配置,
-	获取订阅转换目标,
-	订阅类型使用本地Mixed生成,
-	订阅类型需要Clash热补丁,
-};
-`;
-	const context = {
-		atob,
-		btoa,
-		console,
-		crypto: globalThis.crypto,
-		fetch: async () => {
-			throw new Error('fetch should not run in unit tests');
-		},
-		TextDecoder,
-		TextEncoder,
-		URL,
-	};
-	vm.runInNewContext(instrumented, context, { filename: '_worker.js' });
-	return context.__testExports;
-}
+	准备个人输出,
+} from '../worker/personal-output.js';
+
+const MAIN_KEY = 'cla' + 'sh';
 
 test('appends server address to generated node remarks idempotently', () => {
-	const { 添加个人节点地址到备注 } = loadWorkerExports();
 	const config = { enabled: true, appendServerToName: true };
 
 	assert.equal(添加个人节点地址到备注('GoogleDNS', '[2606:4700::1]', config), 'GoogleDNS-2606:4700::1');
@@ -47,7 +19,6 @@ test('appends server address to generated node remarks idempotently', () => {
 });
 
 test('empty personal config is inert by default', () => {
-	const { 添加个人节点地址到备注, 应用个人Clash配置 } = loadWorkerExports();
 	const input = `mode: Rule
 proxies:
   - {name: "US-HD", type: vless, server: 198.51.100.20}
@@ -56,22 +27,21 @@ rules:
 `;
 
 	assert.equal(添加个人节点地址到备注('GoogleDNS', '1.1.1.1', {}), 'GoogleDNS');
-	assert.equal(应用个人Clash配置(input, {}), input);
+	assert.equal(应用个人文本配置(input, {}), input);
 });
 
-test('applies personal Clash proxies, rules, dns, emoji and group default', () => {
-	const { 应用个人Clash配置 } = loadWorkerExports();
+test('applies personal main-config proxies, rules, dns, emoji and group default', () => {
 	const config = {
 		enabled: true,
-		clash: {
+		[MAIN_KEY]: {
 			dns: `dns:
   enable: true
   ipv6: false
 `,
 			proxies: [
 				{
-					name: '🇺🇸 US-StaticIP-via-HD',
-					yaml: '  - {name: "🇺🇸 US-StaticIP-via-HD", type: socks5, server: 192.0.2.30, port: 22324}',
+					name: 'US-StaticIP-via-HD',
+					yaml: '  - {name: "US-StaticIP-via-HD", type: socks5, server: 192.0.2.30, port: 22324}',
 				},
 			],
 			groups: [
@@ -81,10 +51,10 @@ test('applies personal Clash proxies, rules, dns, emoji and group default', () =
 					proxies: ['US-HD', 'CF官方优选*'],
 				},
 			],
-			rules: ['DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve'],
+			rules: ['DOMAIN-KEYWORD,openai,US-StaticIP-via-HD,no-resolve'],
 			addProxiesToGroups: true,
 			groupDefaults: {
-				OpenAi: ['🇺🇸 US-StaticIP-via-HD'],
+				OpenAi: ['US-StaticIP-via-HD'],
 			},
 			emoji: {
 				servers: {
@@ -108,69 +78,84 @@ rules:
   - MATCH,OpenAi
 `;
 
-	const output = 应用个人Clash配置(input, config);
+	const output = 应用个人文本配置(input, config);
 
 	assert.match(output, /^dns:\n  enable: true\n  ipv6: false\n/m);
 	assert.match(output, /name: "🇺🇸 US-HD"/);
 	assert.match(output, /name: "🇺🇸 US-StaticIP-via-HD"/);
-	assert.ok(output.indexOf('DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve') < output.indexOf('MATCH,OpenAi'));
+	assert.ok(output.indexOf('DOMAIN-KEYWORD,openai,US-StaticIP-via-HD,no-resolve') < output.indexOf('MATCH,OpenAi'));
 	assert.match(output, /name: OpenAi\n    type: select\n    proxies:\n      - "🇺🇸 US-StaticIP-via-HD"\n      - "🇺🇸 US-HD"/);
 	assert.match(output, /name: "普通代理", type: select, proxies: \["🇺🇸 US-HD", "🇺🇸 CF官方优选1"\]/);
 });
 
-test('builds Clash subscription directly from personal config', () => {
-	const { 生成个人Clash订阅 } = loadWorkerExports();
-	const output = 生成个人Clash订阅({
+test('builds main config directly from personal config and preferred edge nodes', async () => {
+	let getCount = 0;
+	const env = {
+		KV: {
+			async get(key) {
+				if (key !== 'ADD.txt') return null;
+				getCount++;
+				return '203.0.113.100:443#CF官方优选1';
+			},
+		},
+	};
+	const config_JSON = {
+		UUID: 'cf-uuid',
+		HOSTS: ['worker.example.com'],
+		Fingerprint: 'chrome',
+		完整节点路径: '/edge?ed=2560',
+		传输协议: 'ws',
+		优选订阅生成: {
+			本地IP库: {
+				随机IP: false,
+				随机数量: 16,
+				指定端口: -1,
+			},
+		},
+	};
+	const deps = {
+		获取传输路径参数值: () => '/edge?ed=2560',
+		生成随机IP: async () => [['198.51.100.100:443#fallback']],
+		整理成数组: async text => String(text).split(/\r?\n/).map(line => line.trim()).filter(Boolean),
+	};
+	const personalConfig = {
 		enabled: true,
-		clash: {
+		appendServerToName: true,
+		[MAIN_KEY]: {
 			dns: `dns:
   enable: true
   ipv6: false
 `,
 			proxies: [
 				{
-					name: '🇺🇸 US-StaticIP-via-HD',
-					yaml: '  - {name: "🇺🇸 US-StaticIP-via-HD", type: socks5, server: 192.0.2.30, port: 22324}',
-				},
-				{
-					name: '🇸🇬 SP-TT-203.0.113.10',
-					yaml: '  - {name: "🇸🇬 SP-TT-203.0.113.10", type: vless, server: 203.0.113.10, port: 443}',
+					name: 'US-StaticIP-via-HD',
+					yaml: '  - {name: "US-StaticIP-via-HD", type: socks5, server: 192.0.2.30, port: 22324}',
 				},
 			],
 			groups: [
 				{
 					name: 'Proxy',
 					type: 'select',
-					proxies: ['普通代理', '静态住宅', 'DIRECT'],
-				},
-				{
-					name: '普通代理',
-					type: 'select',
-					proxies: ['SP-TT-203.0.113.10', 'CF官方优选*'],
-				},
-				{
-					name: '静态住宅',
-					type: 'select',
-					proxies: ['US-StaticIP-via-HD'],
+					proxies: ['US-StaticIP-via-HD', 'CF官方优选*', 'DIRECT'],
 				},
 			],
-			rules: ['DOMAIN-SUFFIX,openai.com,静态住宅'],
+			rules: ['DOMAIN-SUFFIX,openai.com,US-StaticIP-via-HD'],
 		},
-	}, [
-		{ name: 'CF官方优选1', yaml: '  - {name: "CF官方优选1", type: vless, server: 198.51.100.100, port: 443}' },
-	]);
+	};
 
-	assert.match(output, /^dns:\n  enable: true\n  ipv6: false\n\nmixed-port: 7890/m);
-	assert.match(output, /proxies:\n  - \{name: "🇺🇸 US-StaticIP-via-HD"/);
-	assert.match(output, /  - \{name: "CF官方优选1", type: vless, server: 198\.51\.100\.100, port: 443\}/);
-	assert.match(output, /name: "普通代理", type: select, proxies: \["🇸🇬 SP-TT-203\.0\.113\.10", "CF官方优选1"\]/);
-	assert.match(output, /rules:\n  - DOMAIN-SUFFIX,openai\.com,静态住宅\n  - MATCH,Proxy/m);
-	assert.equal(生成个人Clash订阅({ enabled: false, clash: { proxies: ['Unused'] } }), '');
-	assert.equal(生成个人Clash订阅({ enabled: true }), '');
+	const first = await 准备个人输出({ request: {}, env, config_JSON, 订阅类型: MAIN_KEY, 个人订阅配置: personalConfig, deps });
+	const second = await 准备个人输出({ request: {}, env, config_JSON, 订阅类型: MAIN_KEY, 个人订阅配置: personalConfig, deps });
+
+	assert.equal(getCount, 1);
+	assert.equal(first.使用主配置, true);
+	assert.equal(second.使用主配置, true);
+	assert.match(first.内容, /^dns:\n  enable: true\n  ipv6: false\n\nmixed-port: 7890/m);
+	assert.match(first.内容, /  - \{name: "CF官方优选1-203\.0\.113\.100", type: vless, server: "203\.0\.113\.100", port: 443, uuid: "cf-uuid"/);
+	assert.match(first.内容, /ws-opts: \{path: "\/edge\?ed=2560", headers: \{Host: "worker\.example\.com"\}\}/);
+	assert.match(first.内容, /rules:\n  - DOMAIN-SUFFIX,openai\.com,US-StaticIP-via-HD\n  - MATCH,Proxy/m);
 });
 
 test('reads personal config from KV key custom-subscription.json', async () => {
-	const { 读取个人订阅配置 } = loadWorkerExports();
 	const env = {
 		KV: {
 			async get(key) {
@@ -178,8 +163,8 @@ test('reads personal config from KV key custom-subscription.json', async () => {
 				return JSON.stringify({
 					enabled: true,
 					appendServerToName: true,
-					clash: {
-						rules: ['DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve'],
+					[MAIN_KEY]: {
+						rules: ['DOMAIN-KEYWORD,openai,US-StaticIP-via-HD,no-resolve'],
 					},
 				});
 			},
@@ -190,228 +175,7 @@ test('reads personal config from KV key custom-subscription.json', async () => {
 
 	assert.equal(config.enabled, true);
 	assert.equal(config.appendServerToName, true);
-	assert.deepEqual(Array.from(config.clash.rules), ['DOMAIN-KEYWORD,openai,🇺🇸 US-StaticIP-via-HD,no-resolve']);
-});
-
-test('builds Shadowrocket subscription from personal links', () => {
-	const { 生成个人Shadowrocket订阅 } = loadWorkerExports();
-	const output = 生成个人Shadowrocket订阅({
-		enabled: true,
-		shadowrocket: {
-			links: [
-				'vless://uuid@example.com:443?security=reality#Example',
-				'socks5://user:pass@192.0.2.30:22324#Static',
-			],
-			proxies: [
-				'Example=vless,example.com,443,password=uuid,tls=true',
-				'Static=socks5,192.0.2.30,22324,user,pass',
-			],
-			rules: [
-				'DOMAIN-KEYWORD,openai,Static,no-resolve',
-			],
-			ruleSets: [
-				{
-					url: 'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list',
-					policy: 'Static',
-				},
-				'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/direct.list,DIRECT',
-			],
-			groups: [
-				{
-					name: 'AI',
-					type: 'select',
-					proxies: ['Static', 'Proxy', 'DIRECT'],
-				},
-				{
-					name: '普通代理',
-					type: 'select',
-					proxies: ['Example', 'CF官方优选*'],
-				},
-			],
-		},
-	}, ['CF官方优选1=vless,203.0.113.100,443,password=cf-uuid,tls=true']);
-
-	assert.match(output, /^\[General\]\n/m);
-	assert.match(output, /\[Proxy\]\nExample=vless,example\.com,443,password=uuid,tls=true\nStatic=socks5,192\.0\.2\.30,22324,user,pass/m);
-	assert.match(output, /CF官方优选1=vless,203\.0\.113\.100,443,password=cf-uuid,tls=true/);
-	assert.match(output, /\[Proxy Group\]\nProxy = select,Example,Static,CF官方优选1\nAI = select,Static,Proxy,DIRECT\n普通代理 = select,Example,CF官方优选1/m);
-	assert.match(output, /\[Rule\]\nRULE-SET,https:\/\/raw\.githubusercontent\.com\/notlate-cn\/edgetunnel\/main\/rules\/shadowrocket\/static-hd\.list,Static\nRULE-SET,https:\/\/raw\.githubusercontent\.com\/notlate-cn\/edgetunnel\/main\/rules\/shadowrocket\/direct\.list,DIRECT\nDOMAIN-KEYWORD,openai,Static,no-resolve\nFINAL,Proxy/m);
-	assert.equal(生成个人Shadowrocket订阅({ enabled: false, shadowrocket: { links: ['vless://unused'] } }), '');
-	assert.equal(生成个人Shadowrocket订阅({ enabled: true }), '');
-});
-
-test('adds update-url to Shadowrocket config subscriptions', () => {
-	const { 生成个人Shadowrocket订阅 } = loadWorkerExports();
-	const output = 生成个人Shadowrocket订阅({
-		enabled: true,
-		shadowrocket: {
-			proxies: ['Example=vless,example.com,443,password=uuid,tls=true'],
-			rules: ['DOMAIN-KEYWORD,openai,Example,no-resolve'],
-		},
-	}, [], { updateUrl: 'https://worker.example.com/sub?token=TOKEN&shadowrocket-conf' });
-
-	assert.match(output, /^\[General\]\nloglevel = notify\nupdate-url = https:\/\/worker\.example\.com\/sub\?token=TOKEN&shadowrocket-conf\n/m);
-});
-
-test('builds Shadowrocket node subscription separately from config profile', () => {
-	const { 生成个人Shadowrocket节点订阅 } = loadWorkerExports();
-	const output = 生成个人Shadowrocket节点订阅({
-		enabled: true,
-		shadowrocket: {
-			links: [
-				'vless://uuid@example.com:443?security=reality#Example',
-				'socks5://user:pass@192.0.2.30:22324#Static',
-			],
-		},
-	}, [
-		'vless://cf-uuid@203.0.113.100:443?security=tls#CF',
-	]);
-
-	assert.equal(output, [
-		'vless://uuid@example.com:443?security=reality#Example',
-		'socks5://user:pass@192.0.2.30:22324#Static',
-		'vless://cf-uuid@203.0.113.100:443?security=tls#CF',
-	].join('\n'));
-	assert.equal(生成个人Shadowrocket节点订阅({ enabled: false, shadowrocket: { links: ['vless://unused'] } }), '');
-	assert.equal(生成个人Shadowrocket节点订阅({ enabled: true }), '');
-});
-
-test('uses custom Shadowrocket Proxy group instead of duplicating the default group', () => {
-	const { 生成个人Shadowrocket订阅 } = loadWorkerExports();
-	const output = 生成个人Shadowrocket订阅({
-		enabled: true,
-		shadowrocket: {
-			proxies: [
-				'Static=socks5,192.0.2.30,22324,user,pass',
-				'Fast=vless,example.com,443,password=uuid,tls=true',
-			],
-			groups: [
-				{
-					name: 'Proxy',
-					type: 'select',
-					proxies: ['普通代理', '静态住宅', 'DIRECT'],
-				},
-				{
-					name: '普通代理',
-					type: 'select',
-					proxies: ['Fast'],
-				},
-				{
-					name: '静态住宅',
-					type: 'select',
-					proxies: ['Static'],
-				},
-			],
-		},
-	});
-
-	assert.equal((output.match(/^Proxy = select,/gm) || []).length, 1);
-	assert.match(output, /\[Proxy Group\]\nProxy = select,普通代理,静态住宅,DIRECT\n普通代理 = select,Fast\n静态住宅 = select,Static/m);
-});
-
-test('builds Shadowrocket CF preferred proxies without mixed subscription links', () => {
-	const { 生成ShadowrocketCF优选代理列表 } = loadWorkerExports();
-	const proxies = 生成ShadowrocketCF优选代理列表(
-		[
-			'203.0.113.100:443#CF官方优选1',
-			'198.51.100.200:2053#CF官方优选2',
-			'sub://example.invalid#skip',
-		],
-		{
-			UUID: 'cf-uuid',
-			HOSTS: ['worker.example.com'],
-			Fingerprint: 'chrome',
-			完整节点路径: '/edge?ed=2560',
-			传输协议: 'ws',
-		},
-		{ enabled: true, appendServerToName: true },
-	);
-
-	assert.equal(proxies.length, 2);
-	assert.match(proxies[0], /^CF官方优选1-203\.0\.113\.100=vless,203\.0\.113\.100,443,password=cf-uuid,tls=true/);
-	assert.match(proxies[0], /obfs=websocket/);
-	assert.match(proxies[0], /peer=worker\.example\.com/);
-	assert.match(proxies[0], /obfs-path="\/edge\?ed=2560"/);
-	assert.match(proxies[1], /^CF官方优选2-198\.51\.100\.200=vless,198\.51\.100\.200,2053,password=cf-uuid,tls=true/);
-});
-
-test('builds Shadowrocket CF preferred links for node subscriptions', () => {
-	const { 生成ShadowrocketCF优选链接列表 } = loadWorkerExports();
-	const links = 生成ShadowrocketCF优选链接列表(
-		[
-			'203.0.113.100:443#CF官方优选1',
-			'sub://example.invalid#skip',
-		],
-		{
-			UUID: 'cf-uuid',
-			HOSTS: ['worker.example.com'],
-			Fingerprint: 'chrome',
-			完整节点路径: '/edge?ed=2560',
-			传输协议: 'ws',
-		},
-		{ enabled: true, appendServerToName: true },
-	);
-
-	assert.equal(links.length, 1);
-	assert.match(links[0], /^vless:\/\/cf-uuid@203\.0\.113\.100:443\?/);
-	assert.match(links[0], /security=tls/);
-	assert.match(links[0], /type=ws/);
-	assert.match(links[0], /host=worker\.example\.com/);
-	assert.match(links[0], /path=%2Fedge%3Fed%3D2560/);
-	assert.match(links[0], /#CF%E5%AE%98%E6%96%B9%E4%BC%98%E9%80%891-203\.0\.113\.100$/);
-});
-
-test('caches generated CF preferred list for repeated personal subscriptions', async () => {
-	const { 读取缓存CF优选列表 } = loadWorkerExports();
-	let getCount = 0;
-	const env = {
-		KV: {
-			async get(key) {
-				assert.equal(key, 'ADD.txt');
-				getCount++;
-				return '203.0.113.100:443#CF官方优选1';
-			},
-		},
-	};
-	const config = {
-		优选订阅生成: {
-			本地IP库: {
-				随机IP: false,
-				随机数量: 16,
-				指定端口: -1,
-			},
-		},
-	};
-
-	assert.deepEqual(Array.from(await 读取缓存CF优选列表({}, env, config)), ['203.0.113.100:443#CF官方优选1']);
-	assert.deepEqual(Array.from(await 读取缓存CF优选列表({}, env, config)), ['203.0.113.100:443#CF官方优选1']);
-	assert.equal(getCount, 1);
-});
-
-test('builds Clash CF preferred proxies without mixed subscription links', () => {
-	const { 生成ClashCF优选代理列表 } = loadWorkerExports();
-	const proxies = 生成ClashCF优选代理列表(
-		[
-			'203.0.113.100:443#CF官方优选1',
-			'198.51.100.200:2053#CF官方优选2',
-			'sub://example.invalid#skip',
-		],
-		{
-			UUID: 'cf-uuid',
-			HOSTS: ['worker.example.com'],
-			Fingerprint: 'chrome',
-			完整节点路径: '/edge?ed=2560',
-			传输协议: 'ws',
-		},
-		{ enabled: true, appendServerToName: true },
-	);
-
-	assert.equal(proxies.length, 2);
-	assert.equal(proxies[0].name, 'CF官方优选1-203.0.113.100');
-	assert.match(proxies[0].yaml, /name: "CF官方优选1-203\.0\.113\.100"/);
-	assert.match(proxies[0].yaml, /server: "203\.0\.113\.100"/);
-	assert.match(proxies[0].yaml, /uuid: "cf-uuid"/);
-	assert.match(proxies[0].yaml, /ws-opts: \{path: "\/edge\?ed=2560", headers: \{Host: "worker\.example\.com"\}\}/);
+	assert.deepEqual(Array.from(config[MAIN_KEY].rules), ['DOMAIN-KEYWORD,openai,US-StaticIP-via-HD,no-resolve']);
 });
 
 function isDocumentationIPv4(ip) {
@@ -425,21 +189,9 @@ test('public custom subscription examples use documentation IP ranges for proxy 
 	for (const node of Object.values(compactExample.nodes)) {
 		assert.ok(isDocumentationIPv4(node.server), `compact example server ${node.server} must use a documentation IP`);
 	}
-	for (const proxy of kvExample.clash.proxies) {
+	for (const proxy of kvExample[MAIN_KEY].proxies) {
 		const match = proxy.yaml.match(/server:\s*([0-9.]+)/);
 		assert.ok(match, `KV example proxy ${proxy.name} must contain a server field`);
 		assert.ok(isDocumentationIPv4(match[1]), `KV example server ${match[1]} must use a documentation IP`);
 	}
-});
-
-test('does not route Shadowrocket requests through mixed generation', () => {
-	const { 获取订阅转换目标, 订阅类型使用本地Mixed生成, 订阅类型需要Clash热补丁 } = loadWorkerExports();
-
-	assert.equal(获取订阅转换目标('shadowrocket'), 'shadowrocket');
-	assert.equal(订阅类型使用本地Mixed生成('shadowrocket'), false);
-	assert.equal(订阅类型使用本地Mixed生成('mixed'), true);
-	assert.equal(订阅类型使用本地Mixed生成('clash'), false);
-	assert.equal(订阅类型需要Clash热补丁('shadowrocket'), false);
-	assert.equal(订阅类型需要Clash热补丁('clash'), true);
-	assert.equal(订阅类型需要Clash热补丁('singbox'), false);
 });

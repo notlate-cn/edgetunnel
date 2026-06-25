@@ -47,11 +47,5 @@ NODE
 echo
 echo "Subscription links:"
 echo
-echo "ClashMac:"
+echo "Main config:"
 echo "https://${WORKER_HOST}/sub?token=${token}&clash"
-echo
-echo "Shadowrocket config (rules):"
-echo "https://${WORKER_HOST}/sub?token=${token}&shadowrocket-conf"
-echo
-echo "Shadowrocket nodes (Subscribe):"
-echo "https://${WORKER_HOST}/sub?token=${token}&shadowrocket-links"

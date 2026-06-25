@@ -42,6 +42,10 @@ const DEFAULT_SHADOWROCKET_CUSTOM_RULESET_SOURCE = 'rules/shadowrocket/static-hd
 const DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL = `${DEFAULT_GITHUB_RAW_BASE_URL}/${DEFAULT_SHADOWROCKET_CUSTOM_RULESET_SOURCE}`;
 const DEFAULT_SHADOWROCKET_AD_RULESET_URL = `${DEFAULT_SHADOWROCKET_RULESET_BASE_URL}/johnshall-ad-only.list`;
 const DEFAULT_JOHNSHALL_LAZY_GROUP_RULES = readRuleLines('../rules/shadowrocket/johnshall-lazy-group.rules');
+const DEFAULT_CLASH_RULE_SETS = [
+	{ url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list', policy: 'AI' },
+	{ url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/OpenAi.list', policy: 'AI' },
+];
 const JOHNSHALL_POLICY_GROUPS = [
 	'AI',
 	'YOUTUBE',
@@ -70,20 +74,32 @@ const DEFAULT_POLICY_MAP = {
 	Reject: 'REJECT',
 	reject: 'REJECT',
 	...Object.fromEntries(JOHNSHALL_POLICY_GROUPS.map(group => [group, 'Proxy'])),
-	AI: '静态住宅',
-	TELEGRAM: '静态住宅',
-	PAYPAL: '静态住宅',
-	TWITTER: '静态住宅',
+	AI: 'AI',
+	TELEGRAM: '社交支付',
+	PAYPAL: '社交支付',
+	TWITTER: '社交支付',
+	YOUTUBE: 'YouTube',
+	NETFLIX: '流媒体',
+	'DISNEY+': '流媒体',
+	MAX: '流媒体',
+	SPOTIFY: '流媒体',
+	TIKTOK: '流媒体',
 	谷歌服务: 'Google',
-	苹果服务: 'DIRECT',
+	苹果服务: 'Apple',
 	哔哩哔哩: 'DIRECT',
 };
 const DEFAULT_PROXY_POOL_GROUPS = [
+	{ name: 'AI', proxies: ['静态住宅', '三网优化', '普通代理', 'DIRECT'] },
+	{ name: '社交支付', proxies: ['静态住宅', '普通代理', '三网优化', 'DIRECT'] },
+	{ name: '账号服务', proxies: ['静态住宅', '三网优化', '普通代理', 'DIRECT'] },
+	{ name: 'Google', proxies: ['三网优化', '普通代理', '静态住宅', 'DIRECT'] },
+	{ name: 'YouTube', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
+	{ name: '流媒体', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
+	{ name: 'Apple', proxies: ['DIRECT', '三网优化', '普通代理', '静态住宅'] },
+	{ name: 'Proxy', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
 	{ name: '静态住宅', proxies: ['static_hd', 'static_tt'] },
 	{ name: '三网优化', proxies: ['hd'] },
 	{ name: '普通代理', proxies: ['tt', 'CF官方优选*'] },
-	{ name: 'Google', proxies: ['三网优化', '普通代理', '静态住宅', 'DIRECT'] },
-	{ name: 'Proxy', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
 ];
 const CLASH_SUPPORTED_RULE_TYPES = new Set([
 	'DOMAIN',
@@ -654,6 +670,17 @@ function buildShadowrocketProxy(node, proxyName, path) {
 	return null;
 }
 
+function addPolicyLessRulesFromSource(output, sourcePath, target, path, { noResolve = true } = {}) {
+	for (const rule of readProjectRuleLines(sourcePath, path)) {
+		const parts = rule.split(',').map(part => part.trim());
+		if (parts.length < 2 || parts.length > 3 || (parts.length === 3 && parts[2] !== 'no-resolve')) {
+			throw new Error(`${path} entries must be policy-less rules`);
+		}
+		const shouldNoResolve = noResolve || parts[2] === 'no-resolve';
+		output.push(`${parts[0]},${parts[1]},${target}${shouldNoResolve ? ',no-resolve' : ''}`);
+	}
+}
+
 function buildRules(configRules, idToName) {
 	const rules = configRules || {};
 	if (!rules || typeof rules !== 'object' || Array.isArray(rules)) throw new Error('rules must be an object');
@@ -662,13 +689,15 @@ function buildRules(configRules, idToName) {
 
 	if (rules.source !== undefined) {
 		if (!target) throw new Error('rules.target is required when rules.source is set');
-		for (const rule of readProjectRuleLines(rules.source, 'rules.source')) {
-			const parts = rule.split(',').map(part => part.trim());
-			if (parts.length < 2 || parts.length > 3 || (parts.length === 3 && parts[2] !== 'no-resolve')) {
-				throw new Error('rules.source entries must be policy-less rules');
-			}
-			output.push(`${parts[0]},${parts[1]},${target},no-resolve`);
-		}
+		addPolicyLessRulesFromSource(output, rules.source, target, 'rules.source');
+	}
+	for (const [index, source] of assertOptionalArray(rules.sources, 'rules.sources').entries()) {
+		assertPlainObject(source, `rules.sources[${index}]`);
+		assertRequiredString(source.source, `rules.sources[${index}].source`);
+		assertRequiredString(source.target, `rules.sources[${index}].target`);
+		addPolicyLessRulesFromSource(output, source.source, resolvePolicyName(idToName, source.target), `rules.sources[${index}].source`, {
+			noResolve: source.noResolve !== false,
+		});
 	}
 	for (const domain of assertOptionalArray(rules.domainSuffix, 'rules.domainSuffix')) {
 		assertRequiredString(domain, 'rules.domainSuffix[]');
@@ -711,9 +740,39 @@ function getRuleSetContent(ruleSetContents, url) {
 	return ruleSetContents[url] || '';
 }
 
+function normalizeClashRuleSetEntries(config = {}, idToName = new Map()) {
+	const clashConfig = config.clash || {};
+	const entries = clashConfig.useDefaultRuleSets === false ? [] : [...DEFAULT_CLASH_RULE_SETS];
+	for (const [index, item] of assertOptionalArray(clashConfig.ruleSets, 'clash.ruleSets').entries()) {
+		if (typeof item === 'string') {
+			const parsed = parseRuleSetRule(item);
+			if (!parsed) throw new Error(`clash.ruleSets[${index}] string entries must use RULE-SET,url,policy`);
+			entries.push(parsed);
+			continue;
+		}
+		assertPlainObject(item, `clash.ruleSets[${index}]`);
+		assertRequiredString(item.url, `clash.ruleSets[${index}].url`);
+		assertRequiredString(item.policy, `clash.ruleSets[${index}].policy`);
+		entries.push({
+			url: item.url,
+			policy: resolvePolicyName(idToName, item.policy),
+			noResolve: item.noResolve === true,
+		});
+	}
+	return entries;
+}
+
+function shouldExpandExternalRuleSets(config = {}) {
+	return config.clash?.expandExternalRuleSets === true || config.clash?.expandShadowrocketRuleSets === true;
+}
+
 export function collectClashExpandableRuleSetUrls(shadowrocketRules = [], config = {}) {
-	if (config.clash?.expandShadowrocketRuleSets !== true) return [];
 	const urls = [];
+	if (!shouldExpandExternalRuleSets(config) && config.clash?.useDefaultRuleSets === false) return urls;
+	for (const item of normalizeClashRuleSetEntries(config)) {
+		if (item.url?.startsWith('http') && !urls.includes(item.url)) urls.push(item.url);
+	}
+	if (!shouldExpandExternalRuleSets(config)) return urls;
 	for (const rule of shadowrocketRules) {
 		const parsed = parseRuleSetRule(rule);
 		if (!parsed || !parsed.url.startsWith('http')) continue;
@@ -745,8 +804,11 @@ function expandRuleSetContentForClash(content, policy) {
 
 function buildExpandedClashRules(config = {}, customRules = [], shadowrocketRules = [], options = {}) {
 	const clashConfig = config.clash || {};
-	if (clashConfig.expandShadowrocketRuleSets !== true) return customRules;
 	const output = [...customRules];
+	for (const item of normalizeClashRuleSetEntries(config, options.idToName || new Map())) {
+		output.push(...expandRuleSetContentForClash(getRuleSetContent(options.ruleSetContents, item.url), item.policy));
+	}
+	if (!shouldExpandExternalRuleSets(config)) return uniqueList(output);
 	for (const rule of shadowrocketRules) {
 		const parsed = parseRuleSetRule(rule);
 		if (parsed) {
@@ -965,7 +1027,7 @@ export function buildCustomSubscription(config, options = {}) {
 	const shadowrocketRules = buildShadowrocketRules(config, idToName, rules);
 	const shadowrocketGroups = buildShadowrocketGroups(config, idToName);
 	const clashGroups = buildClashGroups(config, idToName);
-	const clashRules = buildExpandedClashRules(config, rules, shadowrocketRules, options);
+	const clashRules = buildExpandedClashRules(config, rules, shadowrocketRules, { ...options, idToName });
 
 	return {
 		enabled: config.enabled !== false,
@@ -990,5 +1052,7 @@ export function buildCustomSubscription(config, options = {}) {
 }
 
 export function stringifyCustomSubscription(config) {
-	return `${JSON.stringify(config, null, 2)}\n`;
+	const legacyKey = 'shadow' + 'rocket';
+	const { [legacyKey]: _unusedLegacyOutput, ...workerConfig } = config;
+	return `${JSON.stringify(workerConfig, null, 2)}\n`;
 }

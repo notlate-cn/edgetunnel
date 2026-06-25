@@ -4,7 +4,7 @@
   "dnsPreset": "default",
   "addProxiesToGroups": true,
   "clash": {
-    "expandShadowrocketRuleSets": true
+    "useDefaultRuleSets": false
   },
   "nodes": {
     "tt": {
@@ -66,16 +66,12 @@
     }
   },
   "rules": {
-    "target": "静态住宅",
-    "source": "rules/shadowrocket/static-hd.list"
-  },
-  "groupDefaults": {
-    "电报信息": ["Proxy"],
-    "OpenAi": ["静态住宅"],
-    "OpenAI": ["静态住宅"],
-    "微软服务": ["Proxy"],
-    "香港节点": ["普通代理"],
-    "美国节点": ["三网优化"]
+    "sources": [
+      { "target": "AI", "source": "rules/custom/ai.list" },
+      { "target": "社交支付", "source": "rules/custom/social-payment.list" },
+      { "target": "账号服务", "source": "rules/custom/account-services.list" },
+      { "target": "Apple", "source": "rules/custom/apple.list" }
+    ]
   },
   "emoji": {
     "patterns": []

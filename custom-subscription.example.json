@@ -1,71 +1,16 @@
 {
   "enabled": true,
   "appendServerToName": true,
-  "shadowrocket": {
-    "links": [
-      "vless://YOUR-TT-UUID@203.0.113.10:443?encryption=none&security=reality&type=tcp&flow=xtls-rprx-vision&sni=www.microsoft.com&fp=chrome&pbk=YOUR-TT-REALITY-PUBLIC-KEY&sid=abcd#%F0%9F%87%B8%F0%9F%87%AC%20SP-TT-203.0.113.10",
-      "vless://YOUR-HD-UUID@198.51.100.20:443?encryption=none&security=reality&type=tcp&flow=xtls-rprx-vision&sni=addons.mozilla.org&fp=firefox&pbk=YOUR-HD-REALITY-PUBLIC-KEY&sid=#%F0%9F%87%BA%F0%9F%87%B8%20US-HD-198.51.100.20",
-      "socks5://YOUR-SOCKS-USERNAME:YOUR-SOCKS-PASSWORD@192.0.2.30:22324#%F0%9F%87%BA%F0%9F%87%B8%20US-StaticIP-via-HD",
-      "socks5://YOUR-SOCKS-USERNAME:YOUR-SOCKS-PASSWORD@192.0.2.30:22324#%F0%9F%87%BA%F0%9F%87%B8%20US-StaticIP-via-TT"
-    ],
-    "proxies": [
-      "🇸🇬 SP-TT-203.0.113.10=vless,203.0.113.10,443,password=YOUR-TT-UUID,tls=true,type=tcp,flow=xtls-rprx-vision,sni=www.microsoft.com,peer=www.microsoft.com,fp=chrome,pbk=YOUR-TT-REALITY-PUBLIC-KEY,sid=abcd",
-      "🇺🇸 US-HD-198.51.100.20=vless,198.51.100.20,443,password=YOUR-HD-UUID,tls=true,type=tcp,flow=xtls-rprx-vision,sni=addons.mozilla.org,peer=addons.mozilla.org,fp=firefox,pbk=YOUR-HD-REALITY-PUBLIC-KEY,sid=",
-      "🇺🇸 US-StaticIP-via-HD=socks5,192.0.2.30,22324,YOUR-SOCKS-USERNAME,YOUR-SOCKS-PASSWORD",
-      "🇺🇸 US-StaticIP-via-TT=socks5,192.0.2.30,22324,YOUR-SOCKS-USERNAME,YOUR-SOCKS-PASSWORD"
-    ],
-    "rules": [
-      "RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,静态住宅,no-resolve",
-      "RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT",
-      "RULE-SET,https://raw.githubusercontent.com/iab0x00/ProxyRules/main/Rule/AI.txt,静态住宅",
-      "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Telegram/Telegram.list,静态住宅",
-      "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/PayPal/PayPal.list,静态住宅",
-      "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Twitter/Twitter.list,静态住宅",
-      "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,Proxy",
-      "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list,Google",
-      "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Apple/Apple.list,DIRECT",
-      "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/BiliBili/BiliBili.list,DIRECT",
-      "GEOIP,CN,DIRECT"
-    ],
-    "ruleSets": [],
-    "groups": [
-      {
-        "name": "静态住宅",
-        "type": "select",
-        "proxies": ["🇺🇸 US-StaticIP-via-HD", "🇺🇸 US-StaticIP-via-TT"]
-      },
-      {
-        "name": "三网优化",
-        "type": "select",
-        "proxies": ["🇺🇸 US-HD-198.51.100.20"]
-      },
-      {
-        "name": "普通代理",
-        "type": "select",
-        "proxies": ["🇸🇬 SP-TT-203.0.113.10", "CF官方优选*"]
-      },
-      {
-        "name": "Google",
-        "type": "select",
-        "proxies": ["三网优化", "普通代理", "静态住宅", "DIRECT"]
-      },
-      {
-        "name": "Proxy",
-        "type": "select",
-        "proxies": ["普通代理", "三网优化", "静态住宅", "DIRECT"]
-      }
-    ]
-  },
   "clash": {
     "dns": "dns:\n  enable: true\n  ipv6: false\n  enhanced-mode: fake-ip\n  fake-ip-range: 198.18.0.1/16\n  use-hosts: true\n  nameserver:\n    - https://sm2.doh.pub/dns-query\n    - https://dns.alidns.com/dns-query\n  fake-ip-filter:\n    - '*.argotunnel.com'\n    - 'argotunnel.com'\n    - '*.cloudflare.com'\n    - 'browser.argotunnel.com'\n    - '*.cloudflarebridge.com'\n    - 'localhost'\n    - '+.lan'\n    - '+.local'\n  fallback:\n    - https://dns.google/dns-query\n    - https://cloudflare-dns.com/dns-query\n  fallback-filter:\n    geoip: true\n    geoip-code: CN\n    geosite:\n      - gfw\n    ipcidr:\n      - 240.0.0.0/4\n      - 127.0.0.1/32\n      - 0.0.0.0/32\n    domain:\n      - '+.google.com'\n      - '+.facebook.com'\n      - '+.youtube.com'\n",
     "proxies": [
       {
         "name": "🇸🇬 SP-TT-203.0.113.10",
-        "yaml": "  - {name: \"🇸🇬 SP-TT-203.0.113.10\", type: vless, server: 203.0.113.10, port: 443, uuid: \"YOUR-VLESS-UUID\", network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.microsoft.com, reality-opts: {public-key: \"YOUR-REALITY-PUBLIC-KEY\", short-id: \"YOUR-SHORT-ID\"}}"
+        "yaml": "  - {name: \"🇸🇬 SP-TT-203.0.113.10\", type: vless, server: 203.0.113.10, port: 443, uuid: YOUR-TT-UUID, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.microsoft.com, reality-opts: {public-key: YOUR-TT-REALITY-PUBLIC-KEY, short-id: abcd}}"
       },
       {
         "name": "🇺🇸 US-HD-198.51.100.20",
-        "yaml": "  - {name: \"🇺🇸 US-HD-198.51.100.20\", type: vless, server: 198.51.100.20, port: 443, uuid: \"YOUR-VLESS-UUID\", network: tcp, udp: true, tls: true, flow: xtls-rprx-vision, servername: addons.mozilla.org, client-fingerprint: firefox, reality-opts: {public-key: \"YOUR-REALITY-PUBLIC-KEY\", short-id: \"\"}, smux: {enabled: false, protocol: \"h2mux\", padding: false, max-connections: \"8\", min-streams: \"16\", statistic: true, only-tcp: false}, brutal-opts: {enabled: false, up: \"1000 Mbps\", down: \"1000 Mbps\"}}"
+        "yaml": "  - {name: \"🇺🇸 US-HD-198.51.100.20\", type: vless, server: 198.51.100.20, port: 443, uuid: YOUR-HD-UUID, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: addons.mozilla.org, client-fingerprint: firefox, reality-opts: {public-key: YOUR-HD-REALITY-PUBLIC-KEY, short-id: \"\"}, smux: {enabled: false, protocol: \"h2mux\", padding: false, max-connections: \"8\", min-streams: \"16\", statistic: true, only-tcp: false}, brutal-opts: {enabled: false, up: \"1000 Mbps\", down: \"1000 Mbps\"}}"
       },
       {
         "name": "🇺🇸 US-StaticIP-via-HD",
@@ -77,25 +22,134 @@
       }
     ],
     "rules": [
-      "DOMAIN-SUFFIX,x.com,静态住宅,no-resolve",
-      "DOMAIN-KEYWORD,twitter,静态住宅,no-resolve"
+      "DOMAIN-SUFFIX,gemini.gstatic.com,AI,no-resolve",
+      "DOMAIN-KEYWORD,anthropic,AI,no-resolve",
+      "DOMAIN-KEYWORD,claude,AI,no-resolve",
+      "DOMAIN-KEYWORD,claudemcpcontent,AI,no-resolve",
+      "DOMAIN-KEYWORD,openai,AI,no-resolve",
+      "DOMAIN-KEYWORD,chatgpt,AI,no-resolve",
+      "DOMAIN-SUFFIX,wise.com,社交支付,no-resolve",
+      "DOMAIN-SUFFIX,wisecdn.com,社交支付,no-resolve",
+      "DOMAIN-SUFFIX,neverless.com,社交支付,no-resolve",
+      "DOMAIN-SUFFIX,argotunnel.com,账号服务,no-resolve",
+      "DOMAIN-SUFFIX,cloudflare.com,账号服务,no-resolve",
+      "DOMAIN-SUFFIX,cloudflarebridge.com,账号服务,no-resolve",
+      "DOMAIN-SUFFIX,hostdare.com,账号服务,no-resolve",
+      "DOMAIN-SUFFIX,iproyal.com,账号服务,no-resolve",
+      "DOMAIN-KEYWORD,datadoghq,账号服务,no-resolve",
+      "DOMAIN-KEYWORD,adspower,账号服务,no-resolve",
+      "DOMAIN-KEYWORD,browserleaks,账号服务,no-resolve",
+      "DOMAIN-KEYWORD,auth0,账号服务,no-resolve",
+      "DOMAIN-KEYWORD,apple,Apple,no-resolve",
+      "DOMAIN-KEYWORD,icloud,Apple,no-resolve"
     ],
     "groups": [
-      { "name": "静态住宅", "type": "select", "proxies": ["🇺🇸 US-StaticIP-via-HD", "🇺🇸 US-StaticIP-via-TT"] },
-      { "name": "三网优化", "type": "select", "proxies": ["🇺🇸 US-HD-198.51.100.20"] },
-      { "name": "普通代理", "type": "select", "proxies": ["🇸🇬 SP-TT-203.0.113.10", "CF官方优选*"] },
-      { "name": "Google", "type": "select", "proxies": ["三网优化", "普通代理", "静态住宅", "DIRECT"] },
-      { "name": "Proxy", "type": "select", "proxies": ["普通代理", "三网优化", "静态住宅", "DIRECT"] }
+      {
+        "name": "AI",
+        "type": "select",
+        "proxies": [
+          "静态住宅",
+          "三网优化",
+          "普通代理",
+          "DIRECT"
+        ]
+      },
+      {
+        "name": "社交支付",
+        "type": "select",
+        "proxies": [
+          "静态住宅",
+          "普通代理",
+          "三网优化",
+          "DIRECT"
+        ]
+      },
+      {
+        "name": "账号服务",
+        "type": "select",
+        "proxies": [
+          "静态住宅",
+          "三网优化",
+          "普通代理",
+          "DIRECT"
+        ]
+      },
+      {
+        "name": "Google",
+        "type": "select",
+        "proxies": [
+          "三网优化",
+          "普通代理",
+          "静态住宅",
+          "DIRECT"
+        ]
+      },
+      {
+        "name": "YouTube",
+        "type": "select",
+        "proxies": [
+          "普通代理",
+          "三网优化",
+          "静态住宅",
+          "DIRECT"
+        ]
+      },
+      {
+        "name": "流媒体",
+        "type": "select",
+        "proxies": [
+          "普通代理",
+          "三网优化",
+          "静态住宅",
+          "DIRECT"
+        ]
+      },
+      {
+        "name": "Apple",
+        "type": "select",
+        "proxies": [
+          "DIRECT",
+          "三网优化",
+          "普通代理",
+          "静态住宅"
+        ]
+      },
+      {
+        "name": "Proxy",
+        "type": "select",
+        "proxies": [
+          "普通代理",
+          "三网优化",
+          "静态住宅",
+          "DIRECT"
+        ]
+      },
+      {
+        "name": "静态住宅",
+        "type": "select",
+        "proxies": [
+          "🇺🇸 US-StaticIP-via-HD",
+          "🇺🇸 US-StaticIP-via-TT"
+        ]
+      },
+      {
+        "name": "三网优化",
+        "type": "select",
+        "proxies": [
+          "🇺🇸 US-HD-198.51.100.20"
+        ]
+      },
+      {
+        "name": "普通代理",
+        "type": "select",
+        "proxies": [
+          "🇸🇬 SP-TT-203.0.113.10",
+          "CF官方优选*"
+        ]
+      }
     ],
     "addProxiesToGroups": true,
-    "groupDefaults": {
-      "电报信息": ["Proxy"],
-      "OpenAi": ["静态住宅"],
-      "OpenAI": ["静态住宅"],
-      "微软服务": ["Proxy"],
-      "香港节点": ["普通代理"],
-      "美国节点": ["三网优化"]
-    },
+    "groupDefaults": {},
     "emoji": {
       "servers": {
         "203.0.113.10": "🇸🇬",
@@ -103,12 +157,1034 @@
         "192.0.2.30": "🇺🇸"
       },
       "patterns": [
-        { "match": "新加坡|singapore|(?:^|[\\s_-])sg(?:[\\s_-]|$)|(?:^|[\\s_-])sp(?:[\\s_-]|$)", "flag": "🇸🇬" },
-        { "match": "美国|美國|united\\s*states|america|(?:^|[\\s_-])us(?:[\\s_-]|$)|cloudflare|cf官方", "flag": "🇺🇸" },
-        { "match": "香港|hong\\s*kong|(?:^|[\\s_-])hk(?:[\\s_-]|$)", "flag": "🇭🇰" },
-        { "match": "台湾|台灣|taiwan|(?:^|[\\s_-])tw(?:[\\s_-]|$)", "flag": "🇹🇼" },
-        { "match": "日本|japan|tokyo|(?:^|[\\s_-])jp(?:[\\s_-]|$)", "flag": "🇯🇵" },
-        { "match": "韩国|韓國|korea|seoul|(?:^|[\\s_-])kr(?:[\\s_-]|$)", "flag": "🇰🇷" }
+        {
+          "match": "美国本土外小岛|united\\s*states\\s*minor\\s*outlying\\s*islands|(?:^|[\\\\s_-])um(?:[\\\\s_-]|$)",
+          "flag": "🇺🇲"
+        },
+        {
+          "match": "刚果金|刚果民主共和国|congo\\s*kinshasa|democratic\\s*republic\\s*of\\s*congo|(?:^|[\\\\s_-])cd(?:[\\\\s_-]|$)",
+          "flag": "🇨🇩"
+        },
+        {
+          "match": "法属南部|french\\s*southern\\s*territories|(?:^|[\\\\s_-])tf(?:[\\\\s_-]|$)",
+          "flag": "🇹🇫"
+        },
+        {
+          "match": "中非|中非共和国|central\\s*african\\s*republic|(?:^|[\\\\s_-])cf(?:[\\\\s_-]|$)",
+          "flag": "🇨🇫"
+        },
+        {
+          "match": "北马里亚纳|northern\\s*mariana\\s*islands|(?:^|[\\\\s_-])mp(?:[\\\\s_-]|$)",
+          "flag": "🇲🇵"
+        },
+        {
+          "match": "波黑|波斯尼亚|bosnia|bosnia\\s*and\\s*herzegovina|(?:^|[\\\\s_-])ba(?:[\\\\s_-]|$)",
+          "flag": "🇧🇦"
+        },
+        {
+          "match": "英属维京|british\\s*virgin\\s*islands|(?:^|[\\\\s_-])vg(?:[\\\\s_-]|$)",
+          "flag": "🇻🇬"
+        },
+        {
+          "match": "荷兰加勒比|caribbean\\s*netherlands|bonaire|(?:^|[\\\\s_-])bq(?:[\\\\s_-]|$)",
+          "flag": "🇧🇶"
+        },
+        {
+          "match": "英属印度洋|british\\s*indian\\s*ocean|(?:^|[\\\\s_-])io(?:[\\\\s_-]|$)",
+          "flag": "🇮🇴"
+        },
+        {
+          "match": "阿联酋|阿拉伯联合酋长国|united\\s*arab\\s*emirates|(?:^|[\\\\s_-])uae(?:[\\\\s_-]|$)|dubai|(?:^|[\\\\s_-])ae(?:[\\\\s_-]|$)",
+          "flag": "🇦🇪"
+        },
+        {
+          "match": "安提瓜和巴布达|antigua|barbuda|antigua\\s*and\\s*barbuda|(?:^|[\\\\s_-])ag(?:[\\\\s_-]|$)",
+          "flag": "🇦🇬"
+        },
+        {
+          "match": "多米尼加|多米尼加共和国|dominican\\s*republic|(?:^|[\\\\s_-])do(?:[\\\\s_-]|$)",
+          "flag": "🇩🇴"
+        },
+        {
+          "match": "刚果布|刚果共和国|congo\\s*brazzaville|republic\\s*of\\s*congo|(?:^|[\\\\s_-])cg(?:[\\\\s_-]|$)",
+          "flag": "🇨🇬"
+        },
+        {
+          "match": "赤道几内亚|equatorial\\s*guinea|(?:^|[\\\\s_-])gq(?:[\\\\s_-]|$)",
+          "flag": "🇬🇶"
+        },
+        {
+          "match": "美属维京|us\\s*virgin\\s*islands|virgin\\s*islands|(?:^|[\\\\s_-])vi(?:[\\\\s_-]|$)",
+          "flag": "🇻🇮"
+        },
+        {
+          "match": "圣诞岛|christmas\\s*island|(?:^|[\\\\s_-])cx(?:[\\\\s_-]|$)",
+          "flag": "🇨🇽"
+        },
+        {
+          "match": "福克兰|falkland|falkland\\s*islands|(?:^|[\\\\s_-])fk(?:[\\\\s_-]|$)",
+          "flag": "🇫🇰"
+        },
+        {
+          "match": "法属波利尼西亚|french\\s*polynesia|(?:^|[\\\\s_-])pf(?:[\\\\s_-]|$)",
+          "flag": "🇵🇫"
+        },
+        {
+          "match": "赫德岛|heard\\s*island|mcdonald\\s*islands|(?:^|[\\\\s_-])hm(?:[\\\\s_-]|$)",
+          "flag": "🇭🇲"
+        },
+        {
+          "match": "马绍尔|马绍尔群岛|marshall\\s*islands|(?:^|[\\\\s_-])mh(?:[\\\\s_-]|$)",
+          "flag": "🇲🇭"
+        },
+        {
+          "match": "巴布亚新几内亚|papua\\s*new\\s*guinea|(?:^|[\\\\s_-])pg(?:[\\\\s_-]|$)",
+          "flag": "🇵🇬"
+        },
+        {
+          "match": "圣巴泰勒米|saint\\s*barthelemy|(?:^|[\\\\s_-])bl(?:[\\\\s_-]|$)",
+          "flag": "🇧🇱"
+        },
+        {
+          "match": "北马其顿|马其顿|north\\s*macedonia|macedonia|(?:^|[\\\\s_-])mk(?:[\\\\s_-]|$)",
+          "flag": "🇲🇰"
+        },
+        {
+          "match": "所罗门|所罗门群岛|solomon\\s*islands|(?:^|[\\\\s_-])sb(?:[\\\\s_-]|$)",
+          "flag": "🇸🇧"
+        },
+        {
+          "match": "美属萨摩亚|american\\s*samoa|(?:^|[\\\\s_-])as(?:[\\\\s_-]|$)",
+          "flag": "🇦🇸"
+        },
+        {
+          "match": "开曼|开曼群岛|cayman|cayman\\s*islands|(?:^|[\\\\s_-])ky(?:[\\\\s_-]|$)",
+          "flag": "🇰🇾"
+        },
+        {
+          "match": "捷克|czech|czechia|czech\\s*republic|(?:^|[\\\\s_-])cz(?:[\\\\s_-]|$)",
+          "flag": "🇨🇿"
+        },
+        {
+          "match": "英国|英國|大不列颠|united\\s*kingdom|great\\s*britain|england|london|(?:^|[\\\\s_-])uk(?:[\\\\s_-]|$)|(?:^|[\\\\s_-])gb(?:[\\\\s_-]|$)",
+          "flag": "🇬🇧"
+        },
+        {
+          "match": "西撒哈拉|western\\s*sahara|(?:^|[\\\\s_-])eh(?:[\\\\s_-]|$)",
+          "flag": "🇪🇭"
+        },
+        {
+          "match": "欧洲|欧盟|europe|european\\s*union|(?:^|[\\\\s_-])eu(?:[\\\\s_-]|$)",
+          "flag": "🇪🇺"
+        },
+        {
+          "match": "奥兰|奥兰群岛|aland|aland\\s*islands|(?:^|[\\\\s_-])ax(?:[\\\\s_-]|$)",
+          "flag": "🇦🇽"
+        },
+        {
+          "match": "法罗|法罗群岛|faroe|faroe\\s*islands|(?:^|[\\\\s_-])fo(?:[\\\\s_-]|$)",
+          "flag": "🇫🇴"
+        },
+        {
+          "match": "法属圭亚那|french\\s*guiana|(?:^|[\\\\s_-])gf(?:[\\\\s_-]|$)",
+          "flag": "🇬🇫"
+        },
+        {
+          "match": "几内亚比绍|guinea\\s*bissau|(?:^|[\\\\s_-])gw(?:[\\\\s_-]|$)",
+          "flag": "🇬🇼"
+        },
+        {
+          "match": "列支敦士登|liechtenstein|(?:^|[\\\\s_-])li(?:[\\\\s_-]|$)",
+          "flag": "🇱🇮"
+        },
+        {
+          "match": "新喀里多尼亚|new\\s*caledonia|(?:^|[\\\\s_-])nc(?:[\\\\s_-]|$)",
+          "flag": "🇳🇨"
+        },
+        {
+          "match": "圣文森特|saint\\s*vincent|grenadines|(?:^|[\\\\s_-])vc(?:[\\\\s_-]|$)",
+          "flag": "🇻🇨"
+        },
+        {
+          "match": "南乔治亚|south\\s*georgia|(?:^|[\\\\s_-])gs(?:[\\\\s_-]|$)",
+          "flag": "🇬🇸"
+        },
+        {
+          "match": "美国|美國|united\\s*states|america|(?:^|[\\\\s_-])usa(?:[\\\\s_-]|$)|los\\s*angeles|new\\s*york|san\\s*jose|(?:^|[\\\\s_-])us(?:[\\\\s_-]|$)",
+          "flag": "🇺🇸"
+        },
+        {
+          "match": "布基纳法索|burkina\\s*faso|(?:^|[\\\\s_-])bf(?:[\\\\s_-]|$)",
+          "flag": "🇧🇫"
+        },
+        {
+          "match": "库克群岛|cook\\s*islands|(?:^|[\\\\s_-])ck(?:[\\\\s_-]|$)",
+          "flag": "🇨🇰"
+        },
+        {
+          "match": "科特迪瓦|象牙海岸|cote\\s*divoire|ivory\\s*coast|(?:^|[\\\\s_-])ci(?:[\\\\s_-]|$)",
+          "flag": "🇨🇮"
+        },
+        {
+          "match": "马来西亚|malaysia|kuala\\s*lumpur|(?:^|[\\\\s_-])my(?:[\\\\s_-]|$)",
+          "flag": "🇲🇾"
+        },
+        {
+          "match": "圣赫勒拿|saint\\s*helena|(?:^|[\\\\s_-])sh(?:[\\\\s_-]|$)",
+          "flag": "🇸🇭"
+        },
+        {
+          "match": "法属圣马丁|saint\\s*martin|(?:^|[\\\\s_-])mf(?:[\\\\s_-]|$)",
+          "flag": "🇲🇫"
+        },
+        {
+          "match": "圣皮埃尔|saint\\s*pierre|miquelon|(?:^|[\\\\s_-])pm(?:[\\\\s_-]|$)",
+          "flag": "🇵🇲"
+        },
+        {
+          "match": "沙特|沙特阿拉伯|saudi\\s*arabia|riyadh|(?:^|[\\\\s_-])sa(?:[\\\\s_-]|$)",
+          "flag": "🇸🇦"
+        },
+        {
+          "match": "塞拉利昂|sierra\\s*leone|(?:^|[\\\\s_-])sl(?:[\\\\s_-]|$)",
+          "flag": "🇸🇱"
+        },
+        {
+          "match": "荷属圣马丁|sint\\s*maarten|(?:^|[\\\\s_-])sx(?:[\\\\s_-]|$)",
+          "flag": "🇸🇽"
+        },
+        {
+          "match": "南非|south\\s*africa|(?:^|[\\\\s_-])za(?:[\\\\s_-]|$)",
+          "flag": "🇿🇦"
+        },
+        {
+          "match": "土库曼|土库曼斯坦|turkmenistan|(?:^|[\\\\s_-])tm(?:[\\\\s_-]|$)",
+          "flag": "🇹🇲"
+        },
+        {
+          "match": "阿富汗|afghanistan|(?:^|[\\\\s_-])af(?:[\\\\s_-]|$)",
+          "flag": "🇦🇫"
+        },
+        {
+          "match": "萨尔瓦多|el\\s*salvador|(?:^|[\\\\s_-])sv(?:[\\\\s_-]|$)",
+          "flag": "🇸🇻"
+        },
+        {
+          "match": "德国|德國|germany|deutschland|frankfurt|(?:^|[\\\\s_-])de(?:[\\\\s_-]|$)",
+          "flag": "🇩🇪"
+        },
+        {
+          "match": "马恩岛|isle\\s*of\\s*man|(?:^|[\\\\s_-])im(?:[\\\\s_-]|$)",
+          "flag": "🇮🇲"
+        },
+        {
+          "match": "朝鲜|北朝鲜|north\\s*korea|(?:^|[\\\\s_-])kp(?:[\\\\s_-]|$)",
+          "flag": "🇰🇵"
+        },
+        {
+          "match": "韩国|韓國|南韩|south\\s*korea|korea|seoul|(?:^|[\\\\s_-])kr(?:[\\\\s_-]|$)",
+          "flag": "🇰🇷"
+        },
+        {
+          "match": "荷兰|netherlands|holland|amsterdam|(?:^|[\\\\s_-])nl(?:[\\\\s_-]|$)",
+          "flag": "🇳🇱"
+        },
+        {
+          "match": "新西兰|new\\s*zealand|(?:^|[\\\\s_-])nz(?:[\\\\s_-]|$)",
+          "flag": "🇳🇿"
+        },
+        {
+          "match": "菲律宾|philippines|manila|(?:^|[\\\\s_-])ph(?:[\\\\s_-]|$)",
+          "flag": "🇵🇭"
+        },
+        {
+          "match": "波多黎各|puerto\\s*rico|(?:^|[\\\\s_-])pr(?:[\\\\s_-]|$)",
+          "flag": "🇵🇷"
+        },
+        {
+          "match": "圣基茨和尼维斯|saint\\s*kitts|nevis|(?:^|[\\\\s_-])kn(?:[\\\\s_-]|$)",
+          "flag": "🇰🇳"
+        },
+        {
+          "match": "圣卢西亚|saint\\s*lucia|(?:^|[\\\\s_-])lc(?:[\\\\s_-]|$)",
+          "flag": "🇱🇨"
+        },
+        {
+          "match": "南苏丹|south\\s*sudan|(?:^|[\\\\s_-])ss(?:[\\\\s_-]|$)",
+          "flag": "🇸🇸"
+        },
+        {
+          "match": "瑞士|switzerland|zurich|(?:^|[\\\\s_-])ch(?:[\\\\s_-]|$)",
+          "flag": "🇨🇭"
+        },
+        {
+          "match": "东帝汶|timor\\s*leste|east\\s*timor|(?:^|[\\\\s_-])tl(?:[\\\\s_-]|$)",
+          "flag": "🇹🇱"
+        },
+        {
+          "match": "南极洲|antarctica|(?:^|[\\\\s_-])aq(?:[\\\\s_-]|$)",
+          "flag": "🇦🇶"
+        },
+        {
+          "match": "阿塞拜疆|azerbaijan|(?:^|[\\\\s_-])az(?:[\\\\s_-]|$)",
+          "flag": "🇦🇿"
+        },
+        {
+          "match": "孟加拉|孟加拉国|bangladesh|(?:^|[\\\\s_-])bd(?:[\\\\s_-]|$)",
+          "flag": "🇧🇩"
+        },
+        {
+          "match": "佛得角|cape\\s*verde|cabo\\s*verde|(?:^|[\\\\s_-])cv(?:[\\\\s_-]|$)",
+          "flag": "🇨🇻"
+        },
+        {
+          "match": "哥斯达黎加|costa\\s*rica|(?:^|[\\\\s_-])cr(?:[\\\\s_-]|$)",
+          "flag": "🇨🇷"
+        },
+        {
+          "match": "瓜德罗普|guadeloupe|(?:^|[\\\\s_-])gp(?:[\\\\s_-]|$)",
+          "flag": "🇬🇵"
+        },
+        {
+          "match": "哈萨克斯坦|kazakhstan|(?:^|[\\\\s_-])kz(?:[\\\\s_-]|$)",
+          "flag": "🇰🇿"
+        },
+        {
+          "match": "吉尔吉斯|吉尔吉斯斯坦|kyrgyzstan|(?:^|[\\\\s_-])kg(?:[\\\\s_-]|$)",
+          "flag": "🇰🇬"
+        },
+        {
+          "match": "卢森堡|luxembourg|(?:^|[\\\\s_-])lu(?:[\\\\s_-]|$)",
+          "flag": "🇱🇺"
+        },
+        {
+          "match": "马达加斯加|madagascar|(?:^|[\\\\s_-])mg(?:[\\\\s_-]|$)",
+          "flag": "🇲🇬"
+        },
+        {
+          "match": "马提尼克|martinique|(?:^|[\\\\s_-])mq(?:[\\\\s_-]|$)",
+          "flag": "🇲🇶"
+        },
+        {
+          "match": "毛里塔尼亚|mauritania|(?:^|[\\\\s_-])mr(?:[\\\\s_-]|$)",
+          "flag": "🇲🇷"
+        },
+        {
+          "match": "密克罗尼西亚|micronesia|(?:^|[\\\\s_-])fm(?:[\\\\s_-]|$)",
+          "flag": "🇫🇲"
+        },
+        {
+          "match": "黑山|montenegro|(?:^|[\\\\s_-])me(?:[\\\\s_-]|$)",
+          "flag": "🇲🇪"
+        },
+        {
+          "match": "蒙特塞拉特|montserrat|(?:^|[\\\\s_-])ms(?:[\\\\s_-]|$)",
+          "flag": "🇲🇸"
+        },
+        {
+          "match": "莫桑比克|mozambique|(?:^|[\\\\s_-])mz(?:[\\\\s_-]|$)",
+          "flag": "🇲🇿"
+        },
+        {
+          "match": "圣马力诺|san\\s*marino|(?:^|[\\\\s_-])sm(?:[\\\\s_-]|$)",
+          "flag": "🇸🇲"
+        },
+        {
+          "match": "塞舌尔|seychelles|(?:^|[\\\\s_-])sc(?:[\\\\s_-]|$)",
+          "flag": "🇸🇨"
+        },
+        {
+          "match": "塔吉克斯坦|tajikistan|(?:^|[\\\\s_-])tj(?:[\\\\s_-]|$)",
+          "flag": "🇹🇯"
+        },
+        {
+          "match": "乌兹别克|乌兹别克斯坦|uzbekistan|(?:^|[\\\\s_-])uz(?:[\\\\s_-]|$)",
+          "flag": "🇺🇿"
+        },
+        {
+          "match": "阿根廷|argentina|(?:^|[\\\\s_-])ar(?:[\\\\s_-]|$)",
+          "flag": "🇦🇷"
+        },
+        {
+          "match": "澳大利亚|澳洲|australia|sydney|(?:^|[\\\\s_-])au(?:[\\\\s_-]|$)",
+          "flag": "🇦🇺"
+        },
+        {
+          "match": "巴西|brazil|sao\\s*paulo|(?:^|[\\\\s_-])br(?:[\\\\s_-]|$)",
+          "flag": "🇧🇷"
+        },
+        {
+          "match": "加拿大|canada|toronto|vancouver|(?:^|[\\\\s_-])ca(?:[\\\\s_-]|$)",
+          "flag": "🇨🇦"
+        },
+        {
+          "match": "斯威士兰|eswatini|swaziland|(?:^|[\\\\s_-])sz(?:[\\\\s_-]|$)",
+          "flag": "🇸🇿"
+        },
+        {
+          "match": "直布罗陀|gibraltar|(?:^|[\\\\s_-])gi(?:[\\\\s_-]|$)",
+          "flag": "🇬🇮"
+        },
+        {
+          "match": "格陵兰|greenland|(?:^|[\\\\s_-])gl(?:[\\\\s_-]|$)",
+          "flag": "🇬🇱"
+        },
+        {
+          "match": "危地马拉|guatemala|(?:^|[\\\\s_-])gt(?:[\\\\s_-]|$)",
+          "flag": "🇬🇹"
+        },
+        {
+          "match": "香港|hong\\s*kong|(?:^|[\\\\s_-])hk(?:[\\\\s_-]|$)",
+          "flag": "🇭🇰"
+        },
+        {
+          "match": "印度尼西亚|印尼|indonesia|jakarta|(?:^|[\\\\s_-])id(?:[\\\\s_-]|$)",
+          "flag": "🇮🇩"
+        },
+        {
+          "match": "立陶宛|lithuania|(?:^|[\\\\s_-])lt(?:[\\\\s_-]|$)",
+          "flag": "🇱🇹"
+        },
+        {
+          "match": "毛里求斯|mauritius|(?:^|[\\\\s_-])mu(?:[\\\\s_-]|$)",
+          "flag": "🇲🇺"
+        },
+        {
+          "match": "尼加拉瓜|nicaragua|(?:^|[\\\\s_-])ni(?:[\\\\s_-]|$)",
+          "flag": "🇳🇮"
+        },
+        {
+          "match": "巴勒斯坦|palestine|(?:^|[\\\\s_-])ps(?:[\\\\s_-]|$)",
+          "flag": "🇵🇸"
+        },
+        {
+          "match": "新加坡|singapore|(?:^|[\\\\s_-])sg(?:[\\\\s_-]|$)",
+          "flag": "🇸🇬"
+        },
+        {
+          "match": "斯里兰卡|sri\\s*lanka|(?:^|[\\\\s_-])lk(?:[\\\\s_-]|$)",
+          "flag": "🇱🇰"
+        },
+        {
+          "match": "斯瓦尔巴|svalbard|jan\\s*mayen|(?:^|[\\\\s_-])sj(?:[\\\\s_-]|$)",
+          "flag": "🇸🇯"
+        },
+        {
+          "match": "委内瑞拉|venezuela|(?:^|[\\\\s_-])ve(?:[\\\\s_-]|$)",
+          "flag": "🇻🇪"
+        },
+        {
+          "match": "安圭拉|anguilla|(?:^|[\\\\s_-])ai(?:[\\\\s_-]|$)",
+          "flag": "🇦🇮"
+        },
+        {
+          "match": "巴巴多斯|barbados|(?:^|[\\\\s_-])bb(?:[\\\\s_-]|$)",
+          "flag": "🇧🇧"
+        },
+        {
+          "match": "博茨瓦纳|botswana|(?:^|[\\\\s_-])bw(?:[\\\\s_-]|$)",
+          "flag": "🇧🇼"
+        },
+        {
+          "match": "保加利亚|bulgaria|(?:^|[\\\\s_-])bg(?:[\\\\s_-]|$)",
+          "flag": "🇧🇬"
+        },
+        {
+          "match": "柬埔寨|cambodia|(?:^|[\\\\s_-])kh(?:[\\\\s_-]|$)",
+          "flag": "🇰🇭"
+        },
+        {
+          "match": "喀麦隆|cameroon|(?:^|[\\\\s_-])cm(?:[\\\\s_-]|$)",
+          "flag": "🇨🇲"
+        },
+        {
+          "match": "中国|大陆|china|mainland|(?:^|[\\\\s_-])cn(?:[\\\\s_-]|$)",
+          "flag": "🇨🇳"
+        },
+        {
+          "match": "哥伦比亚|colombia|(?:^|[\\\\s_-])co(?:[\\\\s_-]|$)",
+          "flag": "🇨🇴"
+        },
+        {
+          "match": "吉布提|djibouti|(?:^|[\\\\s_-])dj(?:[\\\\s_-]|$)",
+          "flag": "🇩🇯"
+        },
+        {
+          "match": "多米尼克|dominica|(?:^|[\\\\s_-])dm(?:[\\\\s_-]|$)",
+          "flag": "🇩🇲"
+        },
+        {
+          "match": "埃塞俄比亚|ethiopia|(?:^|[\\\\s_-])et(?:[\\\\s_-]|$)",
+          "flag": "🇪🇹"
+        },
+        {
+          "match": "根西|guernsey|(?:^|[\\\\s_-])gg(?:[\\\\s_-]|$)",
+          "flag": "🇬🇬"
+        },
+        {
+          "match": "梵蒂冈|vatican|holy\\s*see|(?:^|[\\\\s_-])va(?:[\\\\s_-]|$)",
+          "flag": "🇻🇦"
+        },
+        {
+          "match": "洪都拉斯|honduras|(?:^|[\\\\s_-])hn(?:[\\\\s_-]|$)",
+          "flag": "🇭🇳"
+        },
+        {
+          "match": "基里巴斯|kiribati|(?:^|[\\\\s_-])ki(?:[\\\\s_-]|$)",
+          "flag": "🇰🇮"
+        },
+        {
+          "match": "马尔代夫|maldives|(?:^|[\\\\s_-])mv(?:[\\\\s_-]|$)",
+          "flag": "🇲🇻"
+        },
+        {
+          "match": "蒙古|mongolia|(?:^|[\\\\s_-])mn(?:[\\\\s_-]|$)",
+          "flag": "🇲🇳"
+        },
+        {
+          "match": "巴基斯坦|pakistan|(?:^|[\\\\s_-])pk(?:[\\\\s_-]|$)",
+          "flag": "🇵🇰"
+        },
+        {
+          "match": "巴拉圭|paraguay|(?:^|[\\\\s_-])py(?:[\\\\s_-]|$)",
+          "flag": "🇵🇾"
+        },
+        {
+          "match": "皮特凯恩|pitcairn|(?:^|[\\\\s_-])pn(?:[\\\\s_-]|$)",
+          "flag": "🇵🇳"
+        },
+        {
+          "match": "葡萄牙|portugal|(?:^|[\\\\s_-])pt(?:[\\\\s_-]|$)",
+          "flag": "🇵🇹"
+        },
+        {
+          "match": "圣多美|sao\\s*tome|principe|(?:^|[\\\\s_-])st(?:[\\\\s_-]|$)",
+          "flag": "🇸🇹"
+        },
+        {
+          "match": "斯洛伐克|slovakia|(?:^|[\\\\s_-])sk(?:[\\\\s_-]|$)",
+          "flag": "🇸🇰"
+        },
+        {
+          "match": "斯洛文尼亚|slovenia|(?:^|[\\\\s_-])si(?:[\\\\s_-]|$)",
+          "flag": "🇸🇮"
+        },
+        {
+          "match": "苏里南|suriname|(?:^|[\\\\s_-])sr(?:[\\\\s_-]|$)",
+          "flag": "🇸🇷"
+        },
+        {
+          "match": "坦桑尼亚|tanzania|(?:^|[\\\\s_-])tz(?:[\\\\s_-]|$)",
+          "flag": "🇹🇿"
+        },
+        {
+          "match": "泰国|thailand|bangkok|(?:^|[\\\\s_-])th(?:[\\\\s_-]|$)",
+          "flag": "🇹🇭"
+        },
+        {
+          "match": "特立尼达和多巴哥|trinidad|tobago|(?:^|[\\\\s_-])tt(?:[\\\\s_-]|$)",
+          "flag": "🇹🇹"
+        },
+        {
+          "match": "土耳其|turkey|turkiye|istanbul|(?:^|[\\\\s_-])tr(?:[\\\\s_-]|$)",
+          "flag": "🇹🇷"
+        },
+        {
+          "match": "津巴布韦|zimbabwe|(?:^|[\\\\s_-])zw(?:[\\\\s_-]|$)",
+          "flag": "🇿🇼"
+        },
+        {
+          "match": "阿尔巴尼亚|albania|(?:^|[\\\\s_-])al(?:[\\\\s_-]|$)",
+          "flag": "🇦🇱"
+        },
+        {
+          "match": "阿尔及利亚|algeria|(?:^|[\\\\s_-])dz(?:[\\\\s_-]|$)",
+          "flag": "🇩🇿"
+        },
+        {
+          "match": "安道尔|andorra|(?:^|[\\\\s_-])ad(?:[\\\\s_-]|$)",
+          "flag": "🇦🇩"
+        },
+        {
+          "match": "亚美尼亚|armenia|(?:^|[\\\\s_-])am(?:[\\\\s_-]|$)",
+          "flag": "🇦🇲"
+        },
+        {
+          "match": "奥地利|austria|(?:^|[\\\\s_-])at(?:[\\\\s_-]|$)",
+          "flag": "🇦🇹"
+        },
+        {
+          "match": "巴哈马|bahamas|(?:^|[\\\\s_-])bs(?:[\\\\s_-]|$)",
+          "flag": "🇧🇸"
+        },
+        {
+          "match": "巴林|bahrain|(?:^|[\\\\s_-])bh(?:[\\\\s_-]|$)",
+          "flag": "🇧🇭"
+        },
+        {
+          "match": "白俄罗斯|belarus|(?:^|[\\\\s_-])by(?:[\\\\s_-]|$)",
+          "flag": "🇧🇾"
+        },
+        {
+          "match": "比利时|belgium|(?:^|[\\\\s_-])be(?:[\\\\s_-]|$)",
+          "flag": "🇧🇪"
+        },
+        {
+          "match": "百慕大|bermuda|(?:^|[\\\\s_-])bm(?:[\\\\s_-]|$)",
+          "flag": "🇧🇲"
+        },
+        {
+          "match": "玻利维亚|bolivia|(?:^|[\\\\s_-])bo(?:[\\\\s_-]|$)",
+          "flag": "🇧🇴"
+        },
+        {
+          "match": "布隆迪|burundi|(?:^|[\\\\s_-])bi(?:[\\\\s_-]|$)",
+          "flag": "🇧🇮"
+        },
+        {
+          "match": "科科斯|cocos|keeling|(?:^|[\\\\s_-])cc(?:[\\\\s_-]|$)",
+          "flag": "🇨🇨"
+        },
+        {
+          "match": "科摩罗|comoros|(?:^|[\\\\s_-])km(?:[\\\\s_-]|$)",
+          "flag": "🇰🇲"
+        },
+        {
+          "match": "克罗地亚|croatia|(?:^|[\\\\s_-])hr(?:[\\\\s_-]|$)",
+          "flag": "🇭🇷"
+        },
+        {
+          "match": "库拉索|curacao|(?:^|[\\\\s_-])cw(?:[\\\\s_-]|$)",
+          "flag": "🇨🇼"
+        },
+        {
+          "match": "丹麦|denmark|(?:^|[\\\\s_-])dk(?:[\\\\s_-]|$)",
+          "flag": "🇩🇰"
+        },
+        {
+          "match": "厄瓜多尔|ecuador|(?:^|[\\\\s_-])ec(?:[\\\\s_-]|$)",
+          "flag": "🇪🇨"
+        },
+        {
+          "match": "厄立特里亚|eritrea|(?:^|[\\\\s_-])er(?:[\\\\s_-]|$)",
+          "flag": "🇪🇷"
+        },
+        {
+          "match": "爱沙尼亚|estonia|(?:^|[\\\\s_-])ee(?:[\\\\s_-]|$)",
+          "flag": "🇪🇪"
+        },
+        {
+          "match": "芬兰|finland|(?:^|[\\\\s_-])fi(?:[\\\\s_-]|$)",
+          "flag": "🇫🇮"
+        },
+        {
+          "match": "格鲁吉亚|georgia|(?:^|[\\\\s_-])ge(?:[\\\\s_-]|$)",
+          "flag": "🇬🇪"
+        },
+        {
+          "match": "格林纳达|grenada|(?:^|[\\\\s_-])gd(?:[\\\\s_-]|$)",
+          "flag": "🇬🇩"
+        },
+        {
+          "match": "匈牙利|hungary|(?:^|[\\\\s_-])hu(?:[\\\\s_-]|$)",
+          "flag": "🇭🇺"
+        },
+        {
+          "match": "冰岛|iceland|(?:^|[\\\\s_-])is(?:[\\\\s_-]|$)",
+          "flag": "🇮🇸"
+        },
+        {
+          "match": "爱尔兰|ireland|(?:^|[\\\\s_-])ie(?:[\\\\s_-]|$)",
+          "flag": "🇮🇪"
+        },
+        {
+          "match": "牙买加|jamaica|(?:^|[\\\\s_-])jm(?:[\\\\s_-]|$)",
+          "flag": "🇯🇲"
+        },
+        {
+          "match": "黎巴嫩|lebanon|(?:^|[\\\\s_-])lb(?:[\\\\s_-]|$)",
+          "flag": "🇱🇧"
+        },
+        {
+          "match": "莱索托|lesotho|(?:^|[\\\\s_-])ls(?:[\\\\s_-]|$)",
+          "flag": "🇱🇸"
+        },
+        {
+          "match": "利比里亚|liberia|(?:^|[\\\\s_-])lr(?:[\\\\s_-]|$)",
+          "flag": "🇱🇷"
+        },
+        {
+          "match": "马约特|mayotte|(?:^|[\\\\s_-])yt(?:[\\\\s_-]|$)",
+          "flag": "🇾🇹"
+        },
+        {
+          "match": "摩尔多瓦|moldova|(?:^|[\\\\s_-])md(?:[\\\\s_-]|$)",
+          "flag": "🇲🇩"
+        },
+        {
+          "match": "摩洛哥|morocco|(?:^|[\\\\s_-])ma(?:[\\\\s_-]|$)",
+          "flag": "🇲🇦"
+        },
+        {
+          "match": "缅甸|myanmar|burma|(?:^|[\\\\s_-])mm(?:[\\\\s_-]|$)",
+          "flag": "🇲🇲"
+        },
+        {
+          "match": "纳米比亚|namibia|(?:^|[\\\\s_-])na(?:[\\\\s_-]|$)",
+          "flag": "🇳🇦"
+        },
+        {
+          "match": "尼日利亚|nigeria|(?:^|[\\\\s_-])ng(?:[\\\\s_-]|$)",
+          "flag": "🇳🇬"
+        },
+        {
+          "match": "诺福克|norfolk|(?:^|[\\\\s_-])nf(?:[\\\\s_-]|$)",
+          "flag": "🇳🇫"
+        },
+        {
+          "match": "留尼汪|reunion|(?:^|[\\\\s_-])re(?:[\\\\s_-]|$)",
+          "flag": "🇷🇪"
+        },
+        {
+          "match": "罗马尼亚|romania|(?:^|[\\\\s_-])ro(?:[\\\\s_-]|$)",
+          "flag": "🇷🇴"
+        },
+        {
+          "match": "俄罗斯|俄国|russia|russian|moscow|(?:^|[\\\\s_-])ru(?:[\\\\s_-]|$)",
+          "flag": "🇷🇺"
+        },
+        {
+          "match": "塞内加尔|senegal|(?:^|[\\\\s_-])sn(?:[\\\\s_-]|$)",
+          "flag": "🇸🇳"
+        },
+        {
+          "match": "索马里|somalia|(?:^|[\\\\s_-])so(?:[\\\\s_-]|$)",
+          "flag": "🇸🇴"
+        },
+        {
+          "match": "托克劳|tokelau|(?:^|[\\\\s_-])tk(?:[\\\\s_-]|$)",
+          "flag": "🇹🇰"
+        },
+        {
+          "match": "突尼斯|tunisia|(?:^|[\\\\s_-])tn(?:[\\\\s_-]|$)",
+          "flag": "🇹🇳"
+        },
+        {
+          "match": "特克斯和凯科斯|turks|caicos|(?:^|[\\\\s_-])tc(?:[\\\\s_-]|$)",
+          "flag": "🇹🇨"
+        },
+        {
+          "match": "乌克兰|ukraine|(?:^|[\\\\s_-])ua(?:[\\\\s_-]|$)",
+          "flag": "🇺🇦"
+        },
+        {
+          "match": "乌拉圭|uruguay|(?:^|[\\\\s_-])uy(?:[\\\\s_-]|$)",
+          "flag": "🇺🇾"
+        },
+        {
+          "match": "瓦努阿图|vanuatu|(?:^|[\\\\s_-])vu(?:[\\\\s_-]|$)",
+          "flag": "🇻🇺"
+        },
+        {
+          "match": "越南|vietnam|hanoi|(?:^|[\\\\s_-])vn(?:[\\\\s_-]|$)",
+          "flag": "🇻🇳"
+        },
+        {
+          "match": "瓦利斯和富图纳|wallis|futuna|(?:^|[\\\\s_-])wf(?:[\\\\s_-]|$)",
+          "flag": "🇼🇫"
+        },
+        {
+          "match": "安哥拉|angola|(?:^|[\\\\s_-])ao(?:[\\\\s_-]|$)",
+          "flag": "🇦🇴"
+        },
+        {
+          "match": "伯利兹|belize|(?:^|[\\\\s_-])bz(?:[\\\\s_-]|$)",
+          "flag": "🇧🇿"
+        },
+        {
+          "match": "不丹|bhutan|(?:^|[\\\\s_-])bt(?:[\\\\s_-]|$)",
+          "flag": "🇧🇹"
+        },
+        {
+          "match": "布韦岛|bouvet|(?:^|[\\\\s_-])bv(?:[\\\\s_-]|$)",
+          "flag": "🇧🇻"
+        },
+        {
+          "match": "文莱|brunei|(?:^|[\\\\s_-])bn(?:[\\\\s_-]|$)",
+          "flag": "🇧🇳"
+        },
+        {
+          "match": "塞浦路斯|cyprus|(?:^|[\\\\s_-])cy(?:[\\\\s_-]|$)",
+          "flag": "🇨🇾"
+        },
+        {
+          "match": "法国|france|paris|(?:^|[\\\\s_-])fr(?:[\\\\s_-]|$)",
+          "flag": "🇫🇷"
+        },
+        {
+          "match": "冈比亚|gambia|(?:^|[\\\\s_-])gm(?:[\\\\s_-]|$)",
+          "flag": "🇬🇲"
+        },
+        {
+          "match": "希腊|greece|(?:^|[\\\\s_-])gr(?:[\\\\s_-]|$)",
+          "flag": "🇬🇷"
+        },
+        {
+          "match": "几内亚|guinea|(?:^|[\\\\s_-])gn(?:[\\\\s_-]|$)",
+          "flag": "🇬🇳"
+        },
+        {
+          "match": "圭亚那|guyana|(?:^|[\\\\s_-])gy(?:[\\\\s_-]|$)",
+          "flag": "🇬🇾"
+        },
+        {
+          "match": "印度|india|mumbai|(?:^|[\\\\s_-])in(?:[\\\\s_-]|$)",
+          "flag": "🇮🇳"
+        },
+        {
+          "match": "以色列|israel|(?:^|[\\\\s_-])il(?:[\\\\s_-]|$)",
+          "flag": "🇮🇱"
+        },
+        {
+          "match": "泽西|jersey|(?:^|[\\\\s_-])je(?:[\\\\s_-]|$)",
+          "flag": "🇯🇪"
+        },
+        {
+          "match": "约旦|jordan|(?:^|[\\\\s_-])jo(?:[\\\\s_-]|$)",
+          "flag": "🇯🇴"
+        },
+        {
+          "match": "科威特|kuwait|(?:^|[\\\\s_-])kw(?:[\\\\s_-]|$)",
+          "flag": "🇰🇼"
+        },
+        {
+          "match": "拉脱维亚|latvia|(?:^|[\\\\s_-])lv(?:[\\\\s_-]|$)",
+          "flag": "🇱🇻"
+        },
+        {
+          "match": "马拉维|malawi|(?:^|[\\\\s_-])mw(?:[\\\\s_-]|$)",
+          "flag": "🇲🇼"
+        },
+        {
+          "match": "墨西哥|mexico|(?:^|[\\\\s_-])mx(?:[\\\\s_-]|$)",
+          "flag": "🇲🇽"
+        },
+        {
+          "match": "摩纳哥|monaco|(?:^|[\\\\s_-])mc(?:[\\\\s_-]|$)",
+          "flag": "🇲🇨"
+        },
+        {
+          "match": "挪威|norway|(?:^|[\\\\s_-])no(?:[\\\\s_-]|$)",
+          "flag": "🇳🇴"
+        },
+        {
+          "match": "巴拿马|panama|(?:^|[\\\\s_-])pa(?:[\\\\s_-]|$)",
+          "flag": "🇵🇦"
+        },
+        {
+          "match": "波兰|poland|(?:^|[\\\\s_-])pl(?:[\\\\s_-]|$)",
+          "flag": "🇵🇱"
+        },
+        {
+          "match": "卢旺达|rwanda|(?:^|[\\\\s_-])rw(?:[\\\\s_-]|$)",
+          "flag": "🇷🇼"
+        },
+        {
+          "match": "塞尔维亚|serbia|(?:^|[\\\\s_-])rs(?:[\\\\s_-]|$)",
+          "flag": "🇷🇸"
+        },
+        {
+          "match": "西班牙|spain|madrid|(?:^|[\\\\s_-])es(?:[\\\\s_-]|$)",
+          "flag": "🇪🇸"
+        },
+        {
+          "match": "瑞典|sweden|(?:^|[\\\\s_-])se(?:[\\\\s_-]|$)",
+          "flag": "🇸🇪"
+        },
+        {
+          "match": "台湾|台灣|taiwan|taipei|(?:^|[\\\\s_-])tw(?:[\\\\s_-]|$)",
+          "flag": "🇹🇼"
+        },
+        {
+          "match": "图瓦卢|tuvalu|(?:^|[\\\\s_-])tv(?:[\\\\s_-]|$)",
+          "flag": "🇹🇻"
+        },
+        {
+          "match": "乌干达|uganda|(?:^|[\\\\s_-])ug(?:[\\\\s_-]|$)",
+          "flag": "🇺🇬"
+        },
+        {
+          "match": "赞比亚|zambia|(?:^|[\\\\s_-])zm(?:[\\\\s_-]|$)",
+          "flag": "🇿🇲"
+        },
+        {
+          "match": "科索沃|kosovo|(?:^|[\\\\s_-])xk(?:[\\\\s_-]|$)",
+          "flag": "🇽🇰"
+        },
+        {
+          "match": "阿鲁巴|aruba|(?:^|[\\\\s_-])aw(?:[\\\\s_-]|$)",
+          "flag": "🇦🇼"
+        },
+        {
+          "match": "贝宁|benin|(?:^|[\\\\s_-])bj(?:[\\\\s_-]|$)",
+          "flag": "🇧🇯"
+        },
+        {
+          "match": "智利|chile|(?:^|[\\\\s_-])cl(?:[\\\\s_-]|$)",
+          "flag": "🇨🇱"
+        },
+        {
+          "match": "埃及|egypt|(?:^|[\\\\s_-])eg(?:[\\\\s_-]|$)",
+          "flag": "🇪🇬"
+        },
+        {
+          "match": "加蓬|gabon|(?:^|[\\\\s_-])ga(?:[\\\\s_-]|$)",
+          "flag": "🇬🇦"
+        },
+        {
+          "match": "加纳|ghana|(?:^|[\\\\s_-])gh(?:[\\\\s_-]|$)",
+          "flag": "🇬🇭"
+        },
+        {
+          "match": "海地|haiti|(?:^|[\\\\s_-])ht(?:[\\\\s_-]|$)",
+          "flag": "🇭🇹"
+        },
+        {
+          "match": "意大利|italy|(?:^|[\\\\s_-])it(?:[\\\\s_-]|$)",
+          "flag": "🇮🇹"
+        },
+        {
+          "match": "日本|japan|tokyo|osaka|(?:^|[\\\\s_-])jp(?:[\\\\s_-]|$)",
+          "flag": "🇯🇵"
+        },
+        {
+          "match": "肯尼亚|kenya|(?:^|[\\\\s_-])ke(?:[\\\\s_-]|$)",
+          "flag": "🇰🇪"
+        },
+        {
+          "match": "利比亚|libya|(?:^|[\\\\s_-])ly(?:[\\\\s_-]|$)",
+          "flag": "🇱🇾"
+        },
+        {
+          "match": "澳门|澳門|macao|macau|(?:^|[\\\\s_-])mo(?:[\\\\s_-]|$)",
+          "flag": "🇲🇴"
+        },
+        {
+          "match": "马耳他|malta|(?:^|[\\\\s_-])mt(?:[\\\\s_-]|$)",
+          "flag": "🇲🇹"
+        },
+        {
+          "match": "瑙鲁|nauru|(?:^|[\\\\s_-])nr(?:[\\\\s_-]|$)",
+          "flag": "🇳🇷"
+        },
+        {
+          "match": "尼泊尔|nepal|(?:^|[\\\\s_-])np(?:[\\\\s_-]|$)",
+          "flag": "🇳🇵"
+        },
+        {
+          "match": "尼日尔|niger|(?:^|[\\\\s_-])ne(?:[\\\\s_-]|$)",
+          "flag": "🇳🇪"
+        },
+        {
+          "match": "帕劳|palau|(?:^|[\\\\s_-])pw(?:[\\\\s_-]|$)",
+          "flag": "🇵🇼"
+        },
+        {
+          "match": "卡塔尔|qatar|(?:^|[\\\\s_-])qa(?:[\\\\s_-]|$)",
+          "flag": "🇶🇦"
+        },
+        {
+          "match": "萨摩亚|samoa|(?:^|[\\\\s_-])ws(?:[\\\\s_-]|$)",
+          "flag": "🇼🇸"
+        },
+        {
+          "match": "苏丹|sudan|(?:^|[\\\\s_-])sd(?:[\\\\s_-]|$)",
+          "flag": "🇸🇩"
+        },
+        {
+          "match": "叙利亚|syria|(?:^|[\\\\s_-])sy(?:[\\\\s_-]|$)",
+          "flag": "🇸🇾"
+        },
+        {
+          "match": "汤加|tonga|(?:^|[\\\\s_-])to(?:[\\\\s_-]|$)",
+          "flag": "🇹🇴"
+        },
+        {
+          "match": "也门|yemen|(?:^|[\\\\s_-])ye(?:[\\\\s_-]|$)",
+          "flag": "🇾🇪"
+        },
+        {
+          "match": "乍得|chad|(?:^|[\\\\s_-])td(?:[\\\\s_-]|$)",
+          "flag": "🇹🇩"
+        },
+        {
+          "match": "古巴|cuba|(?:^|[\\\\s_-])cu(?:[\\\\s_-]|$)",
+          "flag": "🇨🇺"
+        },
+        {
+          "match": "斐济|fiji|(?:^|[\\\\s_-])fj(?:[\\\\s_-]|$)",
+          "flag": "🇫🇯"
+        },
+        {
+          "match": "关岛|guam|(?:^|[\\\\s_-])gu(?:[\\\\s_-]|$)",
+          "flag": "🇬🇺"
+        },
+        {
+          "match": "伊朗|iran|(?:^|[\\\\s_-])ir(?:[\\\\s_-]|$)",
+          "flag": "🇮🇷"
+        },
+        {
+          "match": "伊拉克|iraq|(?:^|[\\\\s_-])iq(?:[\\\\s_-]|$)",
+          "flag": "🇮🇶"
+        },
+        {
+          "match": "老挝|laos|(?:^|[\\\\s_-])la(?:[\\\\s_-]|$)",
+          "flag": "🇱🇦"
+        },
+        {
+          "match": "马里|mali|(?:^|[\\\\s_-])ml(?:[\\\\s_-]|$)",
+          "flag": "🇲🇱"
+        },
+        {
+          "match": "纽埃|niue|(?:^|[\\\\s_-])nu(?:[\\\\s_-]|$)",
+          "flag": "🇳🇺"
+        },
+        {
+          "match": "阿曼|oman|(?:^|[\\\\s_-])om(?:[\\\\s_-]|$)",
+          "flag": "🇴🇲"
+        },
+        {
+          "match": "秘鲁|peru|(?:^|[\\\\s_-])pe(?:[\\\\s_-]|$)",
+          "flag": "🇵🇪"
+        },
+        {
+          "match": "多哥|togo|(?:^|[\\\\s_-])tg(?:[\\\\s_-]|$)",
+          "flag": "🇹🇬"
+        },
+        {
+          "match": "新加坡|singapore|(?:^|[\\s_-])sg(?:[\\s_-]|$)|(?:^|[\\s_-])sp(?:[\\s_-]|$)",
+          "flag": "🇸🇬"
+        },
+        {
+          "match": "美国|美國|united\\s*states|america|(?:^|[\\s_-])us(?:[\\s_-]|$)|cloudflare|cf官方",
+          "flag": "🇺🇸"
+        },
+        {
+          "match": "香港|hong\\s*kong|(?:^|[\\s_-])hk(?:[\\s_-]|$)",
+          "flag": "🇭🇰"
+        },
+        {
+          "match": "台湾|台灣|taiwan|(?:^|[\\s_-])tw(?:[\\s_-]|$)",
+          "flag": "🇹🇼"
+        },
+        {
+          "match": "日本|japan|tokyo|(?:^|[\\s_-])jp(?:[\\s_-]|$)",
+          "flag": "🇯🇵"
+        },
+        {
+          "match": "韩国|韓國|korea|seoul|(?:^|[\\s_-])kr(?:[\\s_-]|$)",
+          "flag": "🇰🇷"
+        }
       ]
     }
   }
