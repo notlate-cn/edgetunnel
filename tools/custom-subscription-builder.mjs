@@ -911,6 +911,37 @@ function uniqueList(values) {
 	return output;
 }
 
+function unquoteYamlString(value) {
+	const text = String(value || '').trim();
+	if (text.length >= 2 && text.startsWith('"') && text.endsWith('"')) return text.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+	if (text.length >= 2 && text.startsWith("'") && text.endsWith("'")) return text.slice(1, -1).replace(/''/g, "'");
+	return text;
+}
+
+function appendFakeIpFilter(dnsBlock, entries) {
+	const additions = uniqueList(entries.map(entry => String(entry || '').trim()).filter(Boolean));
+	if (!dnsBlock || !additions.length) return dnsBlock;
+
+	const lines = dnsBlock.trimEnd().split('\n');
+	const filterIndex = lines.findIndex(line => /^  fake-ip-filter:\s*$/.test(line));
+	if (filterIndex === -1) return `${lines.join('\n')}\n  fake-ip-filter:\n${additions.map(entry => `    - ${quoteYamlString(entry)}`).join('\n')}\n`;
+
+	let insertIndex = filterIndex + 1;
+	const existing = new Set();
+	while (insertIndex < lines.length) {
+		const line = lines[insertIndex];
+		if (/^  [^-\s]/.test(line) || /^\S/.test(line)) break;
+		const match = line.match(/^\s*-\s*(.+)$/);
+		if (match) existing.add(unquoteYamlString(match[1]));
+		insertIndex += 1;
+	}
+
+	const missing = additions.filter(entry => !existing.has(entry));
+	if (!missing.length) return `${lines.join('\n')}\n`;
+	lines.splice(insertIndex, 0, ...missing.map(entry => `    - ${quoteYamlString(entry)}`));
+	return `${lines.join('\n')}\n`;
+}
+
 function resolveProxyList(proxies, idToName, path) {
 	return assertOptionalArray(proxies, path).map(proxy => resolvePolicyName(idToName, proxy));
 }
@@ -990,9 +1021,14 @@ function buildEmoji(config, nodes) {
 }
 
 function resolveDnsBlock(config) {
-	if (typeof config.dnsYaml === 'string') return config.dnsYaml;
+	const dnsConfig = config.dns;
+	if (dnsConfig !== undefined) assertPlainObject(dnsConfig, 'dns');
+	const fakeIpFilter = assertOptionalArray(dnsConfig?.fakeIpFilter, 'dns.fakeIpFilter');
+	for (const [index, entry] of fakeIpFilter.entries()) assertRequiredString(entry, `dns.fakeIpFilter[${index}]`);
+
+	if (typeof config.dnsYaml === 'string') return appendFakeIpFilter(config.dnsYaml, fakeIpFilter);
 	if (config.dnsPreset === false || config.dnsPreset === null) return '';
-	if (!config.dnsPreset || config.dnsPreset === 'default') return DEFAULT_DNS_BLOCK;
+	if (!config.dnsPreset || config.dnsPreset === 'default') return appendFakeIpFilter(DEFAULT_DNS_BLOCK, fakeIpFilter);
 	throw new Error(`unsupported dnsPreset "${config.dnsPreset}"`);
 }
 

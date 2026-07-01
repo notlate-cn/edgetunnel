@@ -151,6 +151,27 @@ test('builds full KV config from compact node ids', () => {
 	assert.ok(output.clash.emoji.patterns.some(pattern => pattern.flag === '🇯🇵'));
 });
 
+test('appends custom fake-ip filter entries to default DNS', () => {
+	const output = buildCustomSubscription({
+		...SIMPLE_CONFIG,
+		dns: {
+			fakeIpFilter: [
+				'ports.ubuntu.com',
+				'*.ubuntu.com',
+				'deb.debian.org',
+				'*.debian.org',
+			],
+		},
+	});
+
+	assert.match(output.clash.dns, /fake-ip-filter:\n/);
+	assert.match(output.clash.dns, /    - "ports\.ubuntu\.com"\n/);
+	assert.match(output.clash.dns, /    - "\*\.ubuntu\.com"\n/);
+	assert.match(output.clash.dns, /    - "deb\.debian\.org"\n/);
+	assert.match(output.clash.dns, /    - "\*\.debian\.org"\n/);
+	assert.match(output.clash.dns, /fallback:\n/);
+});
+
 test('default emoji patterns cover common countries and regions broadly', () => {
 	const output = buildCustomSubscription(SIMPLE_CONFIG);
 	const patterns = output.clash.emoji.patterns;

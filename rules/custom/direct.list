@@ -1,0 +1,6 @@
+DOMAIN,ports.ubuntu.com
+DOMAIN,archive.ubuntu.com
+DOMAIN,security.ubuntu.com
+DOMAIN-SUFFIX,ubuntu.com
+DOMAIN,deb.debian.org
+DOMAIN-SUFFIX,debian.org

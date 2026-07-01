@@ -40,6 +40,7 @@ rules/custom/ai.list
 rules/custom/social-payment.list
 rules/custom/account-services.list
 rules/custom/apple.list
+rules/custom/direct.list
 ```
 
 Reference those lists from `custom-subscription.private.json`:
@@ -48,6 +49,7 @@ Reference those lists from `custom-subscription.private.json`:
 {
   "rules": {
     "sources": [
+      { "target": "DIRECT", "source": "rules/custom/direct.list", "noResolve": false },
       { "target": "AI", "source": "rules/custom/ai.list" },
       { "target": "社交支付", "source": "rules/custom/social-payment.list" },
       { "target": "账号服务", "source": "rules/custom/account-services.list" },
@@ -81,6 +83,48 @@ Useful placement:
 - PayPal-adjacent, Wise, Neverless and social/payment domains: `rules/custom/social-payment.list`
 - Cloudflare, HostDare, IPRoyal, Datadog, AdsPower, BrowserLeaks and Auth0-style login domains: `rules/custom/account-services.list`
 - Apple and iCloud overrides: `rules/custom/apple.list`
+- Domains that must keep real DNS answers and direct routing, such as OS package mirrors: `rules/custom/direct.list`
+
+## DNS Fake IP Filter
+
+Append domains that must not receive fake IP answers:
+
+```json
+{
+  "dns": {
+    "fakeIpFilter": [
+      "ports.ubuntu.com",
+      "archive.ubuntu.com",
+      "security.ubuntu.com",
+      "*.ubuntu.com",
+      "ubuntu.com",
+      "deb.debian.org",
+      "*.debian.org",
+      "debian.org",
+      "cloudflare.com",
+      "*.cloudflare.com",
+      "cloudflare-dns.com",
+      "*.cloudflare-dns.com",
+      "cloudflare-ech.com",
+      "*.cloudflare-ech.com",
+      "cloudflareaccess.com",
+      "*.cloudflareaccess.com",
+      "cloudflarebridge.com",
+      "*.cloudflarebridge.com",
+      "cloudflareclient.com",
+      "*.cloudflareclient.com",
+      "workers.dev",
+      "*.workers.dev",
+      "pages.dev",
+      "*.pages.dev",
+      "trycloudflare.com",
+      "*.trycloudflare.com"
+    ]
+  }
+}
+```
+
+This is separate from route rules. Put the same domains in a `DIRECT` rule list when they should also bypass proxy routing.
 
 ## Build
 
