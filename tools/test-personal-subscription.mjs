@@ -137,6 +137,14 @@ test('builds main config directly from personal config and preferred edge nodes'
 					name: 'Proxy',
 					type: 'select',
 					proxies: ['US-StaticIP-via-HD', 'CF官方优选*', 'DIRECT'],
+					use: ['NAT鸡'],
+				},
+			],
+			proxyProviders: [
+				{
+					name: 'NAT鸡',
+					url: 'https://example.com/getsub/nat',
+					path: './proxy-providers/nat.yaml',
 				},
 			],
 			rules: ['DOMAIN-SUFFIX,openai.com,US-StaticIP-via-HD'],
@@ -152,6 +160,8 @@ test('builds main config directly from personal config and preferred edge nodes'
 	assert.match(first.内容, /^dns:\n  enable: true\n  ipv6: false\n\nmixed-port: 7890/m);
 	assert.match(first.内容, /  - \{name: "CF官方优选1-203\.0\.113\.100", type: vless, server: "203\.0\.113\.100", port: 443, uuid: "cf-uuid"/);
 	assert.match(first.内容, /ws-opts: \{path: "\/edge\?ed=2560", headers: \{Host: "worker\.example\.com"\}\}/);
+	assert.match(first.内容, /proxy-providers:\n  "NAT鸡":\n    type: http\n    url: "https:\/\/example\.com\/getsub\/nat"/);
+	assert.match(first.内容, /proxy-groups:\n  - \{name: "Proxy", type: select, proxies: \["US-StaticIP-via-HD", "CF官方优选1-203\.0\.113\.100", DIRECT\], use: \["NAT鸡"\]\}/);
 	assert.match(first.内容, /rules:\n  - DOMAIN-SUFFIX,openai\.com,US-StaticIP-via-HD\n  - MATCH,Proxy/m);
 });
 

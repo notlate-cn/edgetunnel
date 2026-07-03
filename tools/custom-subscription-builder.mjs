@@ -967,9 +967,37 @@ function buildConfiguredGroups(groups, idToName, path) {
 			name: group.name,
 			type: group.type || 'select',
 			proxies: resolveProxyList(group.proxies, idToName, `${path}.groups.${group.name}.proxies`),
+			use: assertOptionalArray(group.use, `${path}.groups.${group.name}.use`).map(item => {
+				assertRequiredString(item, `${path}.groups.${group.name}.use[]`);
+				return item;
+			}),
 		});
 	}
 	return output;
+}
+
+function buildProxyProviders(clashConfig = {}) {
+	return assertOptionalArray(clashConfig.proxyProviders, 'clash.proxyProviders').map((provider, index) => {
+		assertPlainObject(provider, `clash.proxyProviders[${index}]`);
+		assertRequiredString(provider.name, `clash.proxyProviders[${index}].name`);
+		assertRequiredString(provider.url, `clash.proxyProviders[${index}].url`);
+		const output = {
+			name: provider.name,
+			type: provider.type || 'http',
+			url: provider.url,
+			interval: provider.interval ?? 3600,
+			path: provider.path || `./proxy-providers/${provider.name}.yaml`,
+		};
+		if (provider.healthCheck !== false) {
+			const healthCheck = provider.healthCheck && typeof provider.healthCheck === 'object' && !Array.isArray(provider.healthCheck) ? provider.healthCheck : {};
+			output.healthCheck = {
+				enable: healthCheck.enable !== false,
+				interval: healthCheck.interval ?? 600,
+				url: healthCheck.url || 'https://www.gstatic.com/generate_204',
+			};
+		}
+		return output;
+	});
 }
 
 function buildShadowrocketGroups(config = {}, idToName) {
@@ -983,6 +1011,19 @@ function buildClashGroups(config = {}, idToName) {
 	const clashConfig = config.clash || {};
 	const output = clashConfig.useDefaultProxyGroups === false ? [] : buildDefaultProxyGroups(idToName);
 	output.push(...buildConfiguredGroups(clashConfig.groups, idToName, 'clash'));
+	const groupProviderUses = clashConfig.groupProviderUses || {};
+	if (groupProviderUses && (typeof groupProviderUses !== 'object' || Array.isArray(groupProviderUses))) throw new Error('clash.groupProviderUses must be an object');
+	for (const [groupName, providers] of Object.entries(groupProviderUses)) {
+		const group = output.find(item => item.name === groupName);
+		if (!group) throw new Error(`clash.groupProviderUses references unknown group "${groupName}"`);
+		group.use = uniqueList([
+			...(Array.isArray(group.use) ? group.use : []),
+			...assertOptionalArray(providers, `clash.groupProviderUses.${groupName}`).map(providerName => {
+				assertRequiredString(providerName, `clash.groupProviderUses.${groupName}[]`);
+				return providerName;
+			}),
+		]);
+	}
 	return output;
 }
 
@@ -1064,6 +1105,7 @@ export function buildCustomSubscription(config, options = {}) {
 	const shadowrocketGroups = buildShadowrocketGroups(config, idToName);
 	const clashGroups = buildClashGroups(config, idToName);
 	const clashRules = buildExpandedClashRules(config, rules, shadowrocketRules, { ...options, idToName });
+	const clashProxyProviders = buildProxyProviders(config.clash || {});
 
 	return {
 		enabled: config.enabled !== false,
@@ -1078,6 +1120,7 @@ export function buildCustomSubscription(config, options = {}) {
 		clash: {
 			dns: resolveDnsBlock(config),
 			proxies,
+			proxyProviders: clashProxyProviders,
 			rules: clashRules,
 			groups: clashGroups,
 			addProxiesToGroups: config.addProxiesToGroups !== false,

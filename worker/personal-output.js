@@ -188,6 +188,10 @@ function 渲染主配置代理引用列表(代理名称列表) {
 	return 代理名称列表.map(名称 => ['DIRECT', 'REJECT', 'REJECT-DROP', 'GLOBAL'].includes(名称) ? 名称 : YAML引用字符串(名称)).join(', ');
 }
 
+function 渲染主配置Provider引用列表(provider名称列表) {
+	return provider名称列表.map(名称 => YAML引用字符串(名称)).join(', ');
+}
+
 function 去掉开头国旗Emoji(名称 = '') {
 	return String(名称 || '').replace(/^(?:[\u{1F1E6}-\u{1F1FF}]{2}\s*)+/u, '');
 }
@@ -326,11 +330,43 @@ function 收集主配置全部代理名称(行列表) {
 }
 
 function 渲染个人主配置分组(group, 可选代理名称列表 = []) {
-	if (!group || typeof group !== 'object' || !group.name || !Array.isArray(group.proxies)) return '';
+	if (!group || typeof group !== 'object' || !group.name) return '';
 	const type = group.type || 'select';
-	const proxies = 展开代理名称列表(group.proxies, 可选代理名称列表);
-	if (proxies.length === 0) return '';
-	return `  - {name: ${YAML引用字符串(group.name)}, type: ${type}, proxies: [${渲染主配置代理引用列表(proxies)}]}`;
+	const proxies = 展开代理名称列表(Array.isArray(group.proxies) ? group.proxies : [], 可选代理名称列表);
+	const use = Array.isArray(group.use) ? group.use.map(item => String(item || '').trim()).filter(Boolean) : [];
+	if (proxies.length === 0 && use.length === 0) return '';
+	const parts = [
+		`name: ${YAML引用字符串(group.name)}`,
+		`type: ${type}`,
+	];
+	if (proxies.length > 0) parts.push(`proxies: [${渲染主配置代理引用列表(proxies)}]`);
+	if (use.length > 0) parts.push(`use: [${渲染主配置Provider引用列表(use)}]`);
+	return `  - {${parts.join(', ')}}`;
+}
+
+function 渲染个人主配置Provider(provider) {
+	if (!provider || typeof provider !== 'object' || !provider.name || !provider.url) return '';
+	const 名称 = String(provider.name).trim();
+	const type = provider.type || 'http';
+	const interval = Number(provider.interval ?? 3600) || 3600;
+	const path = provider.path || `./proxy-providers/${名称}.yaml`;
+	const healthCheck = provider.healthCheck === false ? null : (provider.healthCheck && typeof provider.healthCheck === 'object' ? provider.healthCheck : {});
+	const lines = [
+		`  ${YAML引用字符串(名称)}:`,
+		`    type: ${type}`,
+		`    url: ${YAML引用字符串(provider.url)}`,
+		`    interval: ${interval}`,
+		`    path: ${YAML引用字符串(path)}`,
+	];
+	if (healthCheck) {
+		lines.push(
+			'    health-check:',
+			`      enable: ${healthCheck.enable === false ? 'false' : 'true'}`,
+			`      interval: ${Number(healthCheck.interval ?? 600) || 600}`,
+			`      url: ${YAML引用字符串(healthCheck.url || 'https://www.gstatic.com/generate_204')}`,
+		);
+	}
+	return lines.join('\n');
 }
 
 function 移除已有个人主配置分组(行列表, 分组段落, 分组名集合) {
@@ -513,6 +549,7 @@ function 生成个人主配置(配置 = {}, 额外代理列表 = []) {
 	const groupLines = 原始分组.map(group => 渲染个人主配置分组(group, proxyNames)).filter(Boolean);
 	const 包含Proxy分组 = 原始分组.some(group => group && typeof group === 'object' && String(group.name || '').trim() === 'Proxy');
 	if (!包含Proxy分组) groupLines.unshift(`  - {name: Proxy, type: select, proxies: [${渲染主配置代理引用列表(proxyNames)}]}`);
+	const providerLines = (Array.isArray(主配置.proxyProviders) ? 主配置.proxyProviders : []).map(渲染个人主配置Provider).filter(Boolean);
 	const rules = (Array.isArray(主配置.rules) ? 主配置.rules : []).map(rule => String(rule || '').trim()).filter(Boolean);
 	const dns = String(主配置.dns || '').trim();
 	const output = [];
@@ -526,6 +563,9 @@ function 生成个人主配置(配置 = {}, 额外代理列表 = []) {
 		'proxies:',
 		...proxies.map(item => item.yaml),
 		'',
+	);
+	if (providerLines.length > 0) output.push('proxy-providers:', ...providerLines, '');
+	output.push(
 		'proxy-groups:',
 		...groupLines,
 		'',

@@ -39,6 +39,7 @@ Keep your highest-priority custom rules in small lists:
 rules/custom/ai.list
 rules/custom/social-payment.list
 rules/custom/account-services.list
+rules/custom/proxy.list
 rules/custom/apple.list
 rules/custom/direct.list
 ```
@@ -53,6 +54,7 @@ Reference those lists from `custom-subscription.private.json`:
       { "target": "AI", "source": "rules/custom/ai.list" },
       { "target": "社交支付", "source": "rules/custom/social-payment.list" },
       { "target": "账号服务", "source": "rules/custom/account-services.list" },
+      { "target": "普通代理", "source": "rules/custom/proxy.list" },
       { "target": "Apple", "source": "rules/custom/apple.list" }
     ]
   }
@@ -82,6 +84,7 @@ Useful placement:
 - AI providers and model platforms: `rules/custom/ai.list`
 - PayPal-adjacent, Wise, Neverless and social/payment domains: `rules/custom/social-payment.list`
 - Cloudflare, HostDare, IPRoyal, Datadog, AdsPower, BrowserLeaks and Auth0-style login domains: `rules/custom/account-services.list`
+- Domains that should bypass broad ad-block false positives and use the regular proxy pool: `rules/custom/proxy.list`
 - Apple and iCloud overrides: `rules/custom/apple.list`
 - Domains that must keep real DNS answers and direct routing, such as OS package mirrors: `rules/custom/direct.list`
 
@@ -125,6 +128,37 @@ Append domains that must not receive fake IP answers:
 ```
 
 This is separate from route rules. Put the same domains in a `DIRECT` rule list when they should also bypass proxy routing.
+
+## Remote Proxy Providers
+
+Keep external subscription URLs in `custom-subscription.private.json`, not in Git:
+
+```json
+{
+  "clash": {
+    "proxyProviders": [
+      {
+        "name": "NAT鸡",
+        "url": "https://example.com/getsub/nat",
+        "path": "./proxy-providers/nat.yaml"
+      },
+      {
+        "name": "机场聚合",
+        "url": "https://example.com/getsub/collection",
+        "path": "./proxy-providers/collection.yaml"
+      }
+    ],
+    "groupProviderUses": {
+      "普通代理": [
+        "NAT鸡",
+        "机场聚合"
+      ]
+    }
+  }
+}
+```
+
+`proxyProviders` are rendered as Clash/Mihomo `proxy-providers`; `groupProviderUses` appends provider names to the selected policy group through `use`.
 
 ## Build
 

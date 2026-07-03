@@ -48,7 +48,25 @@
   },
   "addProxiesToGroups": true,
   "clash": {
-    "useDefaultRuleSets": false
+    "useDefaultRuleSets": false,
+    "proxyProviders": [
+      {
+        "name": "NAT鸡",
+        "url": "https://example.com/getsub/nat",
+        "path": "./proxy-providers/nat.yaml"
+      },
+      {
+        "name": "机场聚合",
+        "url": "https://example.com/getsub/collection",
+        "path": "./proxy-providers/collection.yaml"
+      }
+    ],
+    "groupProviderUses": {
+      "普通代理": [
+        "NAT鸡",
+        "机场聚合"
+      ]
+    }
   },
   "nodes": {
     "tt": {
@@ -115,6 +133,7 @@
       { "target": "AI", "source": "rules/custom/ai.list" },
       { "target": "社交支付", "source": "rules/custom/social-payment.list" },
       { "target": "账号服务", "source": "rules/custom/account-services.list" },
+      { "target": "普通代理", "source": "rules/custom/proxy.list" },
       { "target": "Apple", "source": "rules/custom/apple.list" }
     ]
   },

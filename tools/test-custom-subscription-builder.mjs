@@ -172,6 +172,43 @@ test('appends custom fake-ip filter entries to default DNS', () => {
 	assert.match(output.clash.dns, /fallback:\n/);
 });
 
+test('adds remote proxy providers to Clash groups', () => {
+	const output = buildCustomSubscription({
+		...SIMPLE_CONFIG,
+		clash: {
+			proxyProviders: [
+				{
+					name: 'NAT鸡',
+					url: 'https://example.com/getsub/nat',
+					path: './proxy-providers/nat.yaml',
+				},
+				{
+					name: '机场聚合',
+					url: 'https://example.com/getsub/collection',
+					interval: 7200,
+					healthCheck: {
+						interval: 900,
+						url: 'https://cp.cloudflare.com/generate_204',
+					},
+				},
+			],
+			groupProviderUses: {
+				普通代理: ['NAT鸡', '机场聚合'],
+			},
+		},
+	});
+
+	assert.deepEqual(output.clash.proxyProviders.map(provider => provider.name), ['NAT鸡', '机场聚合']);
+	assert.deepEqual(output.clash.proxyProviders[0].healthCheck, {
+		enable: true,
+		interval: 600,
+		url: 'https://www.gstatic.com/generate_204',
+	});
+	assert.equal(output.clash.proxyProviders[1].interval, 7200);
+	assert.equal(output.clash.proxyProviders[1].healthCheck.interval, 900);
+	assert.deepEqual(output.clash.groups.find(group => group.name === '普通代理').use, ['NAT鸡', '机场聚合']);
+});
+
 test('default emoji patterns cover common countries and regions broadly', () => {
 	const output = buildCustomSubscription(SIMPLE_CONFIG);
 	const patterns = output.clash.emoji.patterns;
@@ -344,14 +381,19 @@ test('builds compact business groups and classified custom Clash rules', () => {
 				{ target: 'AI', source: 'rules/custom/ai.list' },
 				{ target: '社交支付', source: 'rules/custom/social-payment.list' },
 				{ target: '账号服务', source: 'rules/custom/account-services.list' },
+				{ target: '普通代理', source: 'rules/custom/proxy.list' },
 				{ target: 'Apple', source: 'rules/custom/apple.list' },
 			],
 		},
 		clash: {
 			expandShadowrocketRuleSets: true,
+			expandRejectRuleSets: true,
 		},
 	}, {
 		ruleSetContents: {
+			'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list': [
+				'DOMAIN-SUFFIX,analytics.google.com',
+			].join('\n'),
 			'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list': [
 				'DOMAIN-SUFFIX,cursor.com',
 			].join('\n'),
@@ -401,6 +443,8 @@ test('builds compact business groups and classified custom Clash rules', () => {
 	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,openai,AI,no-resolve'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,wise.com,社交支付,no-resolve'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,cloudflare.com,账号服务,no-resolve'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,analytics.google.com,普通代理,no-resolve'));
+	assert.ok(output.clash.rules.indexOf('DOMAIN-SUFFIX,analytics.google.com,普通代理,no-resolve') < output.clash.rules.indexOf('DOMAIN-SUFFIX,analytics.google.com,REJECT'));
 	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,icloud,Apple,no-resolve'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,cursor.com,AI'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,openai.com,AI'));
