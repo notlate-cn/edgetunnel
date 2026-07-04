@@ -172,6 +172,18 @@ test('appends custom fake-ip filter entries to default DNS', () => {
 	assert.match(output.clash.dns, /fallback:\n/);
 });
 
+test('appends fake-ip filter entries from a custom list file', () => {
+	const output = buildCustomSubscription({
+		...SIMPLE_CONFIG,
+		dns: {
+			fakeIpFilterSource: 'rules/custom/fake-ip-filter.list',
+		},
+	});
+
+	assert.match(output.clash.dns, /    - "archive\.ubuntu\.com"\n/);
+	assert.match(output.clash.dns, /    - "\*\.workers\.dev"\n/);
+});
+
 test('adds remote proxy providers to Clash groups', () => {
 	const output = buildCustomSubscription({
 		...SIMPLE_CONFIG,

@@ -1,29 +1,29 @@
-# Personal Subscription Configuration
+# 个人订阅配置
 
-This fork keeps private proxy details out of `_worker.js` and Git history.
+这个 fork 的目标是把私人代理信息从 `_worker.js` 和 Git 历史中拆出来。
 
-Maintain `custom-subscription.private.json`, generate `custom-subscription.json`, then upload the generated file to the Workers KV key named `custom-subscription.json`.
+日常维护流程是：编辑 `custom-subscription.private.json`，生成 `custom-subscription.json`，再把生成结果上传到 Workers KV 的 `custom-subscription.json` 这个 key。
 
-## Files
+## 文件说明
 
-- `custom-subscription.simple.example.json`: safe compact template for local editing.
-- `custom-subscription.private.json`: your real local config. This file is ignored by Git.
-- `custom-subscription.json`: generated KV payload. This file is ignored by Git.
-- `rules/custom/*.list`: small highest-priority rule lists grouped by business intent.
-- `build.sh`: builds the generated KV payload.
-- `deploy.sh`: builds and uploads the generated KV payload.
-- `wrangler.toml`: public Worker template. Do not put your real KV namespace id here.
-- `wrangler.local.toml`: generated local Worker deployment config. This file is ignored by Git.
+- `custom-subscription.simple.example.json`：可提交到仓库的精简示例配置。
+- `custom-subscription.private.json`：你的真实本地配置，已被 Git 忽略。
+- `custom-subscription.json`：生成后的 KV 负载，已被 Git 忽略。
+- `rules/custom/*.list`：按业务意图拆分的最高优先级自定义规则列表。
+- `build.sh`：生成 KV 负载。
+- `deploy.sh`：生成并上传 KV 负载。
+- `wrangler.toml`：公开安全的 Worker 模板，不要把真实 KV namespace id 写进去。
+- `wrangler.local.toml`：本地生成的 Worker 部署配置，已被 Git 忽略。
 
-## First Setup
+## 首次配置
 
 ```bash
 cp custom-subscription.simple.example.json custom-subscription.private.json
 ```
 
-Edit `custom-subscription.private.json` and replace the placeholder node values.
+编辑 `custom-subscription.private.json`，把示例节点里的占位值替换成你的真实配置。
 
-Put deployment values in `.env.local`:
+部署相关变量放到 `.env.local`：
 
 ```bash
 KV_NAMESPACE_ID=<your-kv-namespace-id>
@@ -31,9 +31,9 @@ WORKER_HOST=<your-worker-host>
 UUID=<your-uuid>
 ```
 
-## Custom Rules
+## 自定义规则
 
-Keep your highest-priority custom rules in small lists:
+最高优先级规则建议拆成多个小列表：
 
 ```text
 rules/custom/ai.list
@@ -42,12 +42,18 @@ rules/custom/account-services.list
 rules/custom/proxy.list
 rules/custom/apple.list
 rules/custom/direct.list
+rules/custom/fake-ip-filter.list
 ```
 
-Reference those lists from `custom-subscription.private.json`:
+路由规则列表只写“不带策略组”的规则行，例如 `DOMAIN-SUFFIX,example.com` 或 `DOMAIN-KEYWORD,example`。DNS fake-ip filter 列表只写域名匹配模式，例如 `example.com` 或 `*.example.com`。
+
+在 `custom-subscription.private.json` 中引用这些列表：
 
 ```json
 {
+  "dns": {
+    "fakeIpFilterSource": "rules/custom/fake-ip-filter.list"
+  },
   "rules": {
     "sources": [
       { "target": "DIRECT", "source": "rules/custom/direct.list", "noResolve": false },
@@ -61,9 +67,21 @@ Reference those lists from `custom-subscription.private.json`:
 }
 ```
 
-The `target` is a business policy group, not a physical node.
+`target` 是业务策略组，不是某个具体节点。
 
-Default policy groups:
+新增路由列表的步骤：
+
+1. 在 `rules/custom/` 下新建文件，例如 `rules/custom/bank.list`。
+2. 在文件里写不带策略组的规则，例如 `DOMAIN-SUFFIX,examplebank.com`。
+3. 在 `rules.sources` 里加一行，指定这个列表应该走哪个策略组：
+
+```json
+{ "target": "DIRECT", "source": "rules/custom/bank.list", "noResolve": false }
+```
+
+只有明确希望生成规则不带 `no-resolve` 时才加 `noResolve: false`，通常用于直连的软件源、系统域名、网络服务域名。普通代理分组一般省略它，构建器会自动加 `no-resolve`。
+
+默认策略组：
 
 ```text
 AI = 静态住宅, 三网优化, 普通代理, DIRECT
@@ -79,59 +97,54 @@ Proxy = 普通代理, 三网优化, 静态住宅, DIRECT
 普通代理 = SP-TT, CF官方优选*
 ```
 
-Useful placement:
+各列表用途：
 
-- AI providers and model platforms: `rules/custom/ai.list`
-- PayPal-adjacent, Wise, Neverless and social/payment domains: `rules/custom/social-payment.list`
-- Cloudflare, HostDare, IPRoyal, Datadog, AdsPower, BrowserLeaks and Auth0-style login domains: `rules/custom/account-services.list`
-- Domains that should bypass broad ad-block false positives and use the regular proxy pool: `rules/custom/proxy.list`
-- Apple and iCloud overrides: `rules/custom/apple.list`
-- Domains that must keep real DNS answers and direct routing, such as OS package mirrors: `rules/custom/direct.list`
+- `rules/custom/ai.list`：AI 服务、模型平台等，走 `AI`。
+- `rules/custom/social-payment.list`：PayPal、Wise、Neverless、社交支付类域名，走 `社交支付`。
+- `rules/custom/account-services.list`：Cloudflare、HostDare、IPRoyal、Datadog、AdsPower、BrowserLeaks、Auth0 等账号/风控相关域名，走 `账号服务`。
+- `rules/custom/proxy.list`：需要避开宽泛广告误杀、但只走普通代理池的域名，走 `普通代理`。
+- `rules/custom/apple.list`：Apple、iCloud 覆盖规则，走 `Apple`。
+- `rules/custom/direct.list`：必须真实 DNS 解析且直连的域名，例如系统软件源，走 `DIRECT`。
+- `rules/custom/fake-ip-filter.list`：必须返回真实 DNS 结果、不走 fake-ip 的域名；它不是路由规则。
+
+本地私有列表可以使用 `*.private.list` 后缀，例如 `rules/custom/fake-ip-filter.private.list`。这些文件已被 Git 忽略。
 
 ## DNS Fake IP Filter
 
-Append domains that must not receive fake IP answers:
+需要返回真实 DNS 结果、不能返回 fake-ip 的域名，放到：
+
+```text
+rules/custom/fake-ip-filter.list
+```
+
+配置中这样引用：
 
 ```json
 {
   "dns": {
-    "fakeIpFilter": [
-      "ports.ubuntu.com",
-      "archive.ubuntu.com",
-      "security.ubuntu.com",
-      "*.ubuntu.com",
-      "ubuntu.com",
-      "deb.debian.org",
-      "*.debian.org",
-      "debian.org",
-      "cloudflare.com",
-      "*.cloudflare.com",
-      "cloudflare-dns.com",
-      "*.cloudflare-dns.com",
-      "cloudflare-ech.com",
-      "*.cloudflare-ech.com",
-      "cloudflareaccess.com",
-      "*.cloudflareaccess.com",
-      "cloudflarebridge.com",
-      "*.cloudflarebridge.com",
-      "cloudflareclient.com",
-      "*.cloudflareclient.com",
-      "workers.dev",
-      "*.workers.dev",
-      "pages.dev",
-      "*.pages.dev",
-      "trycloudflare.com",
-      "*.trycloudflare.com"
+    "fakeIpFilterSource": "rules/custom/fake-ip-filter.list"
+  }
+}
+```
+
+如果还需要本地私有补充列表，可以使用多个来源：
+
+```json
+{
+  "dns": {
+    "fakeIpFilterSources": [
+      "rules/custom/fake-ip-filter.list",
+      "rules/custom/fake-ip-filter.private.list"
     ]
   }
 }
 ```
 
-This is separate from route rules. Put the same domains in a `DIRECT` rule list when they should also bypass proxy routing.
+这和路由规则是两件事。`fake-ip-filter` 只决定 DNS 是否返回真实 IP；如果这些域名也要直连，还要把它们放到 `DIRECT` 对应的路由列表里。
 
-## Remote Proxy Providers
+## 远程代理 Provider
 
-Keep external subscription URLs in `custom-subscription.private.json`, not in Git:
+外部订阅 URL 放在 `custom-subscription.private.json`，不要提交到 Git：
 
 ```json
 {
@@ -158,66 +171,66 @@ Keep external subscription URLs in `custom-subscription.private.json`, not in Gi
 }
 ```
 
-`proxyProviders` are rendered as Clash/Mihomo `proxy-providers`; `groupProviderUses` appends provider names to the selected policy group through `use`.
+`proxyProviders` 会渲染成 Clash/Mihomo 的 `proxy-providers`；`groupProviderUses` 会通过 `use` 把 provider 名称追加到指定策略组。
 
-## Build
+## 构建
 
 ```bash
 ./build.sh
 ```
 
-Equivalent explicit form:
+等价的显式写法：
 
 ```bash
 ./build.sh custom-subscription.private.json custom-subscription.json
 ```
 
-## Upload To KV
+## 上传到 KV
 
 ```bash
 ./deploy.sh
 ```
 
-The default command reads `custom-subscription.private.json` and `KV_NAMESPACE_ID` from `.env.local`.
-If `.env.local` also contains `WORKER_HOST` and `UUID`, it prints the main-config subscription link after upload.
+默认命令会读取 `custom-subscription.private.json`，并从 `.env.local` 读取 `KV_NAMESPACE_ID`。
+如果 `.env.local` 同时包含 `WORKER_HOST` 和 `UUID`，上传后会打印 main-config 订阅链接。
 
-Dry run:
+只演练不上传：
 
 ```bash
 ./deploy.sh --dry-run
 ```
 
-The upload command writes the generated value to this KV key:
+上传命令会把生成结果写到这个 KV key：
 
 ```text
 custom-subscription.json
 ```
 
-## Deploy Worker Code
+## 部署 Worker 代码
 
-Keep the checked-in `wrangler.toml` public-safe. Generate a local config before deploying Worker code:
+仓库里的 `wrangler.toml` 要保持公开安全。部署 Worker 代码前，先生成本地配置：
 
 ```bash
 node tools/write-wrangler-local.mjs
 npx wrangler deploy --config wrangler.local.toml
 ```
 
-## Subscription URL
+## 订阅 URL
 
 ```text
 https://<your-domain>/sub?token=<token>&clash
 ```
 
-When personal proxies are configured, the Worker returns main-config YAML directly instead of calling the external subscription converter first. This keeps subscriptions available even when the converter backend rejects a large generated config.
+配置了个人代理后，Worker 会直接返回 main-config YAML，不再先调用外部订阅转换后端。这样即使转换后端拒绝过大的配置，订阅也能继续可用。
 
-## Rule Order
+## 规则顺序
 
-1. Your classified custom lists under `rules/custom/`.
-2. Default AI rule sets, mapped to `AI`.
-3. Downloaded category lists, mapped to the business policy groups above.
-4. `MATCH,Proxy`.
+1. `rules/custom/` 下的自定义分类列表。
+2. 默认 AI 规则集，映射到 `AI`。
+3. 下载的分类规则列表，映射到上面定义的业务策略组。
+4. `MATCH,Proxy`。
 
-To inline downloaded category lists at build time, use:
+构建时内联下载的分类规则列表，可以使用：
 
 ```json
 {
@@ -227,6 +240,6 @@ To inline downloaded category lists at build time, use:
 }
 ```
 
-The public compact example sets `clash.useDefaultRuleSets` to `false` to keep the checked-in generated example small. Remove that field in your private config if you want the default external AI lists included.
+公开的精简示例配置里设置了 `clash.useDefaultRuleSets: false`，目的是让提交到仓库的生成示例尽量小。如果你的私有配置想启用默认外部 AI 规则列表，移除这个字段即可。
 
-After editing any config or list file, run `./deploy.sh` so the generated KV payload is refreshed.
+每次修改配置或 list 文件后，运行 `./deploy.sh`，刷新生成的 KV 负载并上传。

@@ -1061,11 +1061,25 @@ function buildEmoji(config, nodes) {
 	return { servers, patterns };
 }
 
+function buildFakeIpFilterEntries(dnsConfig) {
+	const entries = [];
+	if (dnsConfig?.fakeIpFilterSource !== undefined) {
+		entries.push(...readProjectRuleLines(dnsConfig.fakeIpFilterSource, 'dns.fakeIpFilterSource'));
+	}
+	for (const [index, source] of assertOptionalArray(dnsConfig?.fakeIpFilterSources, 'dns.fakeIpFilterSources').entries()) {
+		entries.push(...readProjectRuleLines(source, `dns.fakeIpFilterSources[${index}]`));
+	}
+	for (const [index, entry] of assertOptionalArray(dnsConfig?.fakeIpFilter, 'dns.fakeIpFilter').entries()) {
+		assertRequiredString(entry, `dns.fakeIpFilter[${index}]`);
+		entries.push(entry);
+	}
+	return entries;
+}
+
 function resolveDnsBlock(config) {
 	const dnsConfig = config.dns;
 	if (dnsConfig !== undefined) assertPlainObject(dnsConfig, 'dns');
-	const fakeIpFilter = assertOptionalArray(dnsConfig?.fakeIpFilter, 'dns.fakeIpFilter');
-	for (const [index, entry] of fakeIpFilter.entries()) assertRequiredString(entry, `dns.fakeIpFilter[${index}]`);
+	const fakeIpFilter = buildFakeIpFilterEntries(dnsConfig);
 
 	if (typeof config.dnsYaml === 'string') return appendFakeIpFilter(config.dnsYaml, fakeIpFilter);
 	if (config.dnsPreset === false || config.dnsPreset === null) return '';

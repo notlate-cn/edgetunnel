@@ -34,6 +34,7 @@ wrangler.local.toml
 custom-subscription.json
 custom-subscription.private.json
 custom-subscription.generated.json
+rules/custom/*.private.list
 
 # 本地打包产物
 worker-*.zip
