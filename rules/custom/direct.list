@@ -4,3 +4,5 @@ DOMAIN,security.ubuntu.com
 DOMAIN-SUFFIX,ubuntu.com
 DOMAIN,deb.debian.org
 DOMAIN-SUFFIX,debian.org
+DOMAIN-SUFFIX,yibuapi.com
+DOMAIN-SUFFIX,aicorp.work

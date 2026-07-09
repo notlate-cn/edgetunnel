@@ -402,10 +402,11 @@ test('builds compact business groups and classified custom Clash rules', () => {
 			expandRejectRuleSets: true,
 		},
 	}, {
-		ruleSetContents: {
-			'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list': [
-				'DOMAIN-SUFFIX,analytics.google.com',
-			].join('\n'),
+			ruleSetContents: {
+				'https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list': [
+					'DOMAIN-SUFFIX,analytics.google.com',
+					'DOMAIN-SUFFIX,metrics.mzstatic.com',
+				].join('\n'),
 			'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list': [
 				'DOMAIN-SUFFIX,cursor.com',
 			].join('\n'),
@@ -450,15 +451,17 @@ test('builds compact business groups and classified custom Clash rules', () => {
 	assert.deepEqual(output.clash.groups.find(group => group.name === 'AI').proxies, ['静态住宅', '三网优化', '普通代理', 'DIRECT']);
 	assert.deepEqual(output.clash.groups.find(group => group.name === '社交支付').proxies, ['静态住宅', '普通代理', '三网优化', 'DIRECT']);
 	assert.deepEqual(output.clash.groups.find(group => group.name === '账号服务').proxies, ['静态住宅', '三网优化', '普通代理', 'DIRECT']);
-	assert.deepEqual(output.clash.groups.find(group => group.name === 'Apple').proxies, ['DIRECT', '三网优化', '普通代理', '静态住宅']);
+	assert.deepEqual(output.clash.groups.find(group => group.name === 'Apple').proxies, ['静态住宅', 'DIRECT', '三网优化', '普通代理']);
 	assert.deepEqual(output.clash.groups.find(group => group.name === '普通代理').proxies, ['🇸🇬 SP-TT-203.0.113.10', 'CF官方优选*']);
 	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,openai,AI,no-resolve'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,wise.com,社交支付,no-resolve'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,cloudflare.com,账号服务,no-resolve'));
-	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,analytics.google.com,普通代理,no-resolve'));
-	assert.ok(output.clash.rules.indexOf('DOMAIN-SUFFIX,analytics.google.com,普通代理,no-resolve') < output.clash.rules.indexOf('DOMAIN-SUFFIX,analytics.google.com,REJECT'));
-	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,icloud,Apple,no-resolve'));
-	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,cursor.com,AI'));
+		assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,analytics.google.com,普通代理,no-resolve'));
+		assert.ok(output.clash.rules.indexOf('DOMAIN-SUFFIX,analytics.google.com,普通代理,no-resolve') < output.clash.rules.indexOf('DOMAIN-SUFFIX,analytics.google.com,REJECT'));
+		assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,icloud,Apple,no-resolve'));
+		assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,mzstatic.com,Apple,no-resolve'));
+		assert.ok(output.clash.rules.indexOf('DOMAIN-SUFFIX,mzstatic.com,Apple,no-resolve') < output.clash.rules.indexOf('DOMAIN-SUFFIX,metrics.mzstatic.com,REJECT'));
+		assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,cursor.com,AI'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,openai.com,AI'));
 	assert.equal(output.clash.rules.filter(rule => rule === 'DOMAIN-SUFFIX,openai.com,AI').length, 1);
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,x.com,社交支付'));

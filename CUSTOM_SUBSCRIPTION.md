@@ -39,6 +39,7 @@ UUID=<your-uuid>
 rules/custom/ai.list
 rules/custom/social-payment.list
 rules/custom/account-services.list
+rules/custom/multi-country.list
 rules/custom/proxy.list
 rules/custom/apple.list
 rules/custom/direct.list
@@ -60,6 +61,7 @@ rules/custom/fake-ip-filter.list
       { "target": "AI", "source": "rules/custom/ai.list" },
       { "target": "社交支付", "source": "rules/custom/social-payment.list" },
       { "target": "账号服务", "source": "rules/custom/account-services.list" },
+      { "target": "多国代理", "source": "rules/custom/multi-country.list" },
       { "target": "普通代理", "source": "rules/custom/proxy.list" },
       { "target": "Apple", "source": "rules/custom/apple.list" }
     ]
@@ -90,11 +92,12 @@ AI = 静态住宅, 三网优化, 普通代理, DIRECT
 Google = 三网优化, 普通代理, 静态住宅, DIRECT
 YouTube = 普通代理, 三网优化, 静态住宅, DIRECT
 流媒体 = 普通代理, 三网优化, 静态住宅, DIRECT
-Apple = DIRECT, 三网优化, 普通代理, 静态住宅
+Apple = 静态住宅, DIRECT, 三网优化, 普通代理
 Proxy = 普通代理, 三网优化, 静态住宅, DIRECT
 静态住宅 = US-StaticIP-via-HD, US-StaticIP-via-TT
 三网优化 = US-HD
 普通代理 = SP-TT, CF官方优选*
+多国代理 = 外部 provider 多地区节点
 ```
 
 各列表用途：
@@ -102,6 +105,7 @@ Proxy = 普通代理, 三网优化, 静态住宅, DIRECT
 - `rules/custom/ai.list`：AI 服务、模型平台等，走 `AI`。
 - `rules/custom/social-payment.list`：PayPal、Wise、Neverless、社交支付类域名，走 `社交支付`。
 - `rules/custom/account-services.list`：Cloudflare、HostDare、IPRoyal、Datadog、AdsPower、BrowserLeaks、Auth0 等账号/风控相关域名，走 `账号服务`。
+- `rules/custom/multi-country.list`：适合走外部多地区 provider 的域名，走 `多国代理`。
 - `rules/custom/proxy.list`：需要避开宽泛广告误杀、但只走普通代理池的域名，走 `普通代理`。
 - `rules/custom/apple.list`：Apple、iCloud 覆盖规则，走 `Apple`。
 - `rules/custom/direct.list`：必须真实 DNS 解析且直连的域名，例如系统软件源，走 `DIRECT`。
@@ -161,8 +165,18 @@ rules/custom/fake-ip-filter.list
         "path": "./proxy-providers/collection.yaml"
       }
     ],
+    "groups": [
+      {
+        "name": "多国代理",
+        "proxies": []
+      }
+    ],
     "groupProviderUses": {
       "普通代理": [
+        "NAT鸡",
+        "机场聚合"
+      ],
+      "多国代理": [
         "NAT鸡",
         "机场聚合"
       ]
@@ -171,7 +185,7 @@ rules/custom/fake-ip-filter.list
 }
 ```
 
-`proxyProviders` 会渲染成 Clash/Mihomo 的 `proxy-providers`；`groupProviderUses` 会通过 `use` 把 provider 名称追加到指定策略组。
+`proxyProviders` 会渲染成 Clash/Mihomo 的 `proxy-providers`；`groupProviderUses` 会通过 `use` 把 provider 名称追加到指定策略组。像 `多国代理` 这种只靠 provider 填充的分组，需要在 `groups` 里显式创建。
 
 ## 构建
 

@@ -95,7 +95,7 @@ const DEFAULT_PROXY_POOL_GROUPS = [
 	{ name: 'Google', proxies: ['三网优化', '普通代理', '静态住宅', 'DIRECT'] },
 	{ name: 'YouTube', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
 	{ name: '流媒体', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
-	{ name: 'Apple', proxies: ['DIRECT', '三网优化', '普通代理', '静态住宅'] },
+	{ name: 'Apple', proxies: ['静态住宅', 'DIRECT', '三网优化', '普通代理'] },
 	{ name: 'Proxy', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
 	{ name: '静态住宅', proxies: ['static_hd', 'static_tt'] },
 	{ name: '三网优化', proxies: ['hd'] },

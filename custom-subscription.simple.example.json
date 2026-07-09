@@ -20,8 +20,18 @@
         "path": "./proxy-providers/collection.yaml"
       }
     ],
+    "groups": [
+      {
+        "name": "多国代理",
+        "proxies": []
+      }
+    ],
     "groupProviderUses": {
       "普通代理": [
+        "NAT鸡",
+        "机场聚合"
+      ],
+      "多国代理": [
         "NAT鸡",
         "机场聚合"
       ]
@@ -92,6 +102,7 @@
       { "target": "AI", "source": "rules/custom/ai.list" },
       { "target": "社交支付", "source": "rules/custom/social-payment.list" },
       { "target": "账号服务", "source": "rules/custom/account-services.list" },
+      { "target": "多国代理", "source": "rules/custom/multi-country.list" },
       { "target": "普通代理", "source": "rules/custom/proxy.list" },
       { "target": "Apple", "source": "rules/custom/apple.list" }
     ]
