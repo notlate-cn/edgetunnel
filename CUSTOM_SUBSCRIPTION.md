@@ -104,11 +104,11 @@ Proxy = 普通代理, 三网优化, 静态住宅, DIRECT
 
 - `rules/custom/ai.list`：AI 服务、模型平台等，走 `AI`。
 - `rules/custom/social-payment.list`：PayPal、Wise、Neverless、社交支付类域名，走 `社交支付`。
-- `rules/custom/account-services.list`：Cloudflare、HostDare、IPRoyal、Datadog、AdsPower、BrowserLeaks、Auth0 等账号/风控相关域名，走 `账号服务`。
+- `rules/custom/account-services.list`：Cloudflare、HostDare、Datadog、AdsPower、BrowserLeaks、Auth0 等账号/风控相关域名，走 `账号服务`。
 - `rules/custom/multi-country.list`：适合走外部多地区 provider 的域名，走 `多国代理`。
 - `rules/custom/proxy.list`：需要避开宽泛广告误杀、但只走普通代理池的域名，走 `普通代理`。
 - `rules/custom/apple.list`：Apple、iCloud 覆盖规则，走 `Apple`。
-- `rules/custom/direct.list`：必须真实 DNS 解析且直连的域名，例如系统软件源，走 `DIRECT`。
+- `rules/custom/direct.list`：必须真实 DNS 解析且直连的域名，例如系统软件源和 IPRoyal，走 `DIRECT`。
 - `rules/custom/fake-ip-filter.list`：必须返回真实 DNS 结果、不走 fake-ip 的域名；它不是路由规则。
 
 本地私有列表可以使用 `*.private.list` 后缀，例如 `rules/custom/fake-ip-filter.private.list`。这些文件已被 Git 忽略。

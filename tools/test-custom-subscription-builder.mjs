@@ -390,6 +390,7 @@ test('builds compact business groups and classified custom Clash rules', () => {
 		},
 		rules: {
 			sources: [
+				{ target: 'DIRECT', source: 'rules/custom/direct.list', noResolve: false },
 				{ target: 'AI', source: 'rules/custom/ai.list' },
 				{ target: '社交支付', source: 'rules/custom/social-payment.list' },
 				{ target: '账号服务', source: 'rules/custom/account-services.list' },
@@ -454,6 +455,8 @@ test('builds compact business groups and classified custom Clash rules', () => {
 	assert.deepEqual(output.clash.groups.find(group => group.name === 'Apple').proxies, ['静态住宅', 'DIRECT', '三网优化', '普通代理']);
 	assert.deepEqual(output.clash.groups.find(group => group.name === '普通代理').proxies, ['🇸🇬 SP-TT-203.0.113.10', 'CF官方优选*']);
 	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,openai,AI,no-resolve'));
+	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,iproyal.com,DIRECT'));
+	assert.ok(!output.clash.rules.includes('DOMAIN-SUFFIX,iproyal.com,账号服务,no-resolve'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,wise.com,社交支付,no-resolve'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,cloudflare.com,账号服务,no-resolve'));
 		assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,analytics.google.com,普通代理,no-resolve'));
