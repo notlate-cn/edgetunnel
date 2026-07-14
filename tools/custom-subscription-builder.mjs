@@ -866,9 +866,13 @@ function buildShadowrocketPolicyMap(config, idToName) {
 	return buildPolicyMap(config.shadowrocket || {}, idToName, 'shadowrocket');
 }
 
-function normalizeShadowrocketRule(rule, idToName, policyMap = {}) {
+function parseShadowrocketRule(rule) {
 	const parts = String(rule || '').trim().split(',').map(part => part.trim());
-	const policyIndex = shadowrocketPolicyIndex(parts);
+	return { parts, policyIndex: shadowrocketPolicyIndex(parts) };
+}
+
+function normalizeShadowrocketRule(rule, idToName, policyMap = {}) {
+	const { parts, policyIndex } = parseShadowrocketRule(rule);
 	if (policyIndex >= 0) {
 		const policy = parts[policyIndex];
 		parts[policyIndex] = policyMap[policy] || resolveNodeName(idToName, policy);
@@ -880,13 +884,18 @@ function buildShadowrocketRules(config = {}, idToName, rules) {
 	const shadowrocketConfig = config.shadowrocket || {};
 	const policyMap = buildShadowrocketPolicyMap(config, idToName);
 	const output = [];
+	const directRules = rules.filter(rule => {
+		const { parts, policyIndex } = parseShadowrocketRule(rule);
+		return policyIndex >= 0 && parts[policyIndex] === 'DIRECT';
+	});
+	output.push(...directRules.map(rule => normalizeShadowrocketRule(rule, idToName, policyMap)));
 	const target = config.rules?.target ? resolvePolicyName(idToName, config.rules.target) : null;
 	if (rules.length > 0 && target && shadowrocketConfig.inlineCustomRules !== true && shadowrocketConfig.useCustomRuleSet !== false) {
 		const customRuleSetUrl = shadowrocketConfig.customRuleSetUrl || (config.rules?.source ? buildGitHubRawUrl(config.rules.source) : DEFAULT_SHADOWROCKET_CUSTOM_RULESET_URL);
 		output.push(`RULE-SET,${customRuleSetUrl},${target},no-resolve`);
 	}
 	if (shadowrocketConfig.inlineCustomRules === true) {
-		output.push(...rules.map(rule => normalizeShadowrocketRule(rule, idToName, policyMap)));
+		output.push(...rules.filter(rule => !directRules.includes(rule)).map(rule => normalizeShadowrocketRule(rule, idToName, policyMap)));
 	}
 	for (const rule of assertOptionalArray(shadowrocketConfig.rules, 'shadowrocket.rules')) {
 		assertRequiredString(rule, 'shadowrocket.rules[]');

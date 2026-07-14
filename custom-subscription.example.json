@@ -23,6 +23,7 @@
     ],
     "rules": [
       "DOMAIN-SUFFIX,iproyal.com,DIRECT",
+      "DOMAIN-KEYWORD,huawei,DIRECT",
       "DOMAIN-SUFFIX,gemini.gstatic.com,AI,no-resolve",
       "DOMAIN-KEYWORD,anthropic,AI,no-resolve",
       "DOMAIN-KEYWORD,claude,AI,no-resolve",

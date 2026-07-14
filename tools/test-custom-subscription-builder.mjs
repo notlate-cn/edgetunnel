@@ -331,6 +331,9 @@ test('builds three proxy pools and routes Google separately from YouTube', () =>
 		rules: {
 			target: '静态住宅',
 			source: 'rules/shadowrocket/static-hd.list',
+			sources: [
+				{ target: 'DIRECT', source: 'rules/custom/direct.list', noResolve: false },
+			],
 		},
 	});
 
@@ -359,7 +362,8 @@ test('builds three proxy pools and routes Google separately from YouTube', () =>
 		type: 'select',
 		proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'],
 	});
-	assert.equal(output.shadowrocket.rules[0], 'RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,静态住宅,no-resolve');
+	assert.ok(output.shadowrocket.rules.includes('DOMAIN-KEYWORD,huawei,DIRECT'));
+	assert.ok(output.shadowrocket.rules.indexOf('DOMAIN-KEYWORD,huawei,DIRECT') < output.shadowrocket.rules.indexOf('RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/static-hd.list,静态住宅,no-resolve'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Google/Google.list,Google'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/YouTube/YouTube.list,YouTube'));
 	assert.ok(output.shadowrocket.rules.includes('RULE-SET,https://raw.githubusercontent.com/notlate-cn/edgetunnel/main/rules/shadowrocket/johnshall-ad-only.list,REJECT'));
@@ -457,6 +461,8 @@ test('builds compact business groups and classified custom Clash rules', () => {
 	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,openai,AI,no-resolve'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,iproyal.com,DIRECT'));
 	assert.ok(!output.clash.rules.includes('DOMAIN-SUFFIX,iproyal.com,账号服务,no-resolve'));
+	assert.ok(output.clash.rules.includes('DOMAIN-KEYWORD,huawei,DIRECT'));
+	assert.ok(output.clash.rules.indexOf('DOMAIN-KEYWORD,huawei,DIRECT') < output.clash.rules.indexOf('DOMAIN-KEYWORD,icloud,Apple,no-resolve'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,wise.com,社交支付,no-resolve'));
 	assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,cloudflare.com,账号服务,no-resolve'));
 		assert.ok(output.clash.rules.includes('DOMAIN-SUFFIX,analytics.google.com,普通代理,no-resolve'));
