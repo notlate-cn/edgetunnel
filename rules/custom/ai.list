@@ -1,6 +1,8 @@
 DOMAIN-SUFFIX,gemini.gstatic.com
 DOMAIN-KEYWORD,anthropic
 DOMAIN-KEYWORD,claude
+DOMAIN-SUFFIX,hcaptcha.com
+DOMAIN-SUFFIX,stripe.com
 DOMAIN-KEYWORD,claudemcpcontent
 DOMAIN-KEYWORD,openai
 DOMAIN-KEYWORD,chatgpt
