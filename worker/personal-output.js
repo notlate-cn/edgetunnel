@@ -551,6 +551,7 @@ function 生成个人主配置(配置 = {}, 额外代理列表 = []) {
 	if (!包含Proxy分组) groupLines.unshift(`  - {name: Proxy, type: select, proxies: [${渲染主配置代理引用列表(proxyNames)}]}`);
 	const providerLines = (Array.isArray(主配置.proxyProviders) ? 主配置.proxyProviders : []).map(渲染个人主配置Provider).filter(Boolean);
 	const rules = (Array.isArray(主配置.rules) ? 主配置.rules : []).map(rule => String(rule || '').trim()).filter(Boolean);
+	const hasTerminalRule = rules.some(rule => /^MATCH,/i.test(rule));
 	const dns = String(主配置.dns || '').trim();
 	const output = [];
 	if (dns) output.push(dns, '');
@@ -571,7 +572,7 @@ function 生成个人主配置(配置 = {}, 额外代理列表 = []) {
 		'',
 		'rules:',
 		...rules.map(rule => `  - ${rule}`),
-		'  - MATCH,Proxy',
+		...(hasTerminalRule ? [] : ['  - MATCH,Proxy']),
 		'',
 	);
 	return output.join('\n');

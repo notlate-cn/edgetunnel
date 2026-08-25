@@ -1,0 +1,12 @@
+name = "edgetunnel-notlate"
+main = "_worker.js"
+compatibility_date = "2025-11-04"
+keep_vars = true
+
+[[kv_namespaces]]
+binding = "KV"
+id = "cbd45941d9c848e4abe49b9773215529"
+
+[[routes]]
+pattern = "notlate.qzz.io"
+custom_domain = true

@@ -97,7 +97,7 @@ const DEFAULT_PROXY_POOL_GROUPS = [
 	{ name: '流媒体', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
 	{ name: 'Apple', proxies: ['静态住宅', 'DIRECT', '三网优化', '普通代理'] },
 	{ name: 'Proxy', proxies: ['普通代理', '三网优化', '静态住宅', 'DIRECT'] },
-	{ name: '静态住宅', proxies: ['static_hd', 'static_tt'] },
+	{ name: '静态住宅', proxies: ['static_hd', 'static_161_hd'] },
 	{ name: '三网优化', proxies: ['hd'] },
 	{ name: '普通代理', proxies: ['tt', 'CF官方优选*'] },
 ];
@@ -804,7 +804,9 @@ function expandRuleSetContentForClash(content, policy) {
 
 function buildExpandedClashRules(config = {}, customRules = [], shadowrocketRules = [], options = {}) {
 	const clashConfig = config.clash || {};
-	const output = [...customRules];
+	// Terminal rules must be emitted last; Clash stops evaluating after MATCH.
+	const terminalRules = customRules.filter(rule => /^MATCH,/i.test(String(rule).trim()));
+	const output = customRules.filter(rule => !/^MATCH,/i.test(String(rule).trim()));
 	for (const item of normalizeClashRuleSetEntries(config, options.idToName || new Map())) {
 		output.push(...expandRuleSetContentForClash(getRuleSetContent(options.ruleSetContents, item.url), item.policy));
 	}
@@ -820,6 +822,7 @@ function buildExpandedClashRules(config = {}, customRules = [], shadowrocketRule
 		const converted = convertShadowrocketRuleToClash(rule, '');
 		if (converted) output.push(converted);
 	}
+	output.push(...terminalRules);
 	return uniqueList(output);
 }
 

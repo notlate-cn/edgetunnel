@@ -317,6 +317,16 @@ test('builds three proxy pools and routes Google separately from YouTube', () =>
 		...SIMPLE_CONFIG,
 		nodes: {
 			...SIMPLE_CONFIG.nodes,
+			static_161_hd: {
+				type: 'socks5-chain',
+				flag: '🇺🇸',
+				name: 'US-Static161-via-HD',
+				server: '192.0.2.32',
+				port: 12324,
+				username: 'SOCKS-USER-161',
+				password: 'SOCKS-PASS-161',
+				dialer: 'hd',
+			},
 			static_tt: {
 				type: 'socks5-chain',
 				flag: '🇺🇸',
@@ -340,7 +350,7 @@ test('builds three proxy pools and routes Google separately from YouTube', () =>
 	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === '静态住宅'), {
 		name: '静态住宅',
 		type: 'select',
-		proxies: ['🇺🇸 US-StaticIP-via-HD', '🇺🇸 US-StaticIP-via-TT'],
+		proxies: ['🇺🇸 US-StaticIP-via-HD', '🇺🇸 US-Static161-via-HD'],
 	});
 	assert.deepEqual(output.shadowrocket.groups.find(group => group.name === '三网优化'), {
 		name: '三网优化',
